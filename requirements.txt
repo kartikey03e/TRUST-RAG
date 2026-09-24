@@ -1,0 +1,37 @@
+# =============================================================================
+# TRUST-RAG V2 — Python Dependencies
+# =============================================================================
+# Core
+torch>=2.0
+transformers>=4.40
+accelerate>=0.27
+bitsandbytes>=0.43
+
+# Retrieval
+faiss-cpu>=1.7
+rank-bm25>=0.2.2
+sentence-transformers>=2.6
+
+# NLI
+# (uses transformers cross-encoder — no extra dep)
+
+# NLP
+spacy>=3.7
+# After pip install, run: pip install scispacy && pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_sm-0.5.4.tar.gz
+
+# ML / Evaluation
+scikit-learn>=1.4
+numpy>=1.24
+pandas>=2.0
+scipy>=1.12
+
+# Config
+pyyaml>=6.0
+
+# Visualization (for notebooks)
+matplotlib>=3.8
+seaborn>=0.13
+
+# Utilities
+tqdm>=4.66
+jsonlines>=4.0

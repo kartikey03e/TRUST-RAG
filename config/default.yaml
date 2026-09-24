@@ -1,0 +1,159 @@
+# =============================================================================
+# TRUST-RAG V2 — Default Configuration
+# =============================================================================
+# All hyperparameters in a single file. Override per-experiment in
+# config/experiment_configs/*.yaml
+
+# ── Reproducibility ──────────────────────────────────────────────────────────
+seed: 42
+
+# ── Data ─────────────────────────────────────────────────────────────────────
+data:
+  raw_path: "data/raw/pubmedqa_pqal.csv"
+  processed_dir: "data/processed"
+  split_ratios:            # train / val / test
+    train: 0.6
+    val: 0.2
+    test: 0.2
+  important_columns:
+    - pmid
+    - question
+    - contexts
+    - year
+    - meshes
+    - final_decision
+    - long_answer
+
+# ── Retrieval ────────────────────────────────────────────────────────────────
+retrieval:
+  # Dense retriever
+  dense_model: "ncbi/MedCPT-Query-Encoder"
+  dense_article_model: "ncbi/MedCPT-Article-Encoder"
+  dense_dim: 768
+  # Sparse retriever
+  sparse_method: "bm25"
+  # Fusion
+  fusion_method: "rrf"
+  rrf_k: 60
+  # Top-K
+  initial_top_k: 20          # per retriever before fusion
+  final_top_k: 5             # PMID-level evidence blocks returned
+  evidence_top_k: 3          # evidence blocks fed to the LLM
+  # PMID grouping
+  pmid_score_aggregation: "max"   # max | mean
+  # Index paths
+  faiss_index_path: "data/processed/faiss_medcpt.index"
+  bm25_index_path: "data/processed/bm25_index.pkl"
+  pmid_metadata_path: "data/processed/pmid_metadata.json"
+
+# ── Generation ───────────────────────────────────────────────────────────────
+generation:
+  models:
+    medgemma:
+      name: "google/medgemma-1.5-4b-it"
+      dtype: "float16"
+      quantization: null
+      max_new_tokens: 256
+      temperature: 0.1
+      top_p: 0.9
+      repetition_penalty: 1.1
+      do_sample: true
+    qwen:
+      name: "Qwen/Qwen2.5-7B-Instruct"
+      dtype: "float16"
+      quantization: "4bit"        # bitsandbytes 4-bit
+      max_new_tokens: 256
+      temperature: 0.1
+      top_p: 0.9
+      repetition_penalty: 1.1
+      do_sample: true
+  prompt_template: |
+    You are a biomedical research expert. Based on the following evidence
+    from published studies, answer the research question.
+
+    QUESTION: {question}
+
+    EVIDENCE:
+    {evidence}
+
+    Provide your reasoning based on the evidence, then state your final
+    answer as exactly one of: YES, NO, or MAYBE.
+
+    REASONING:
+
+# ── Decision Extraction ─────────────────────────────────────────────────────
+decision_extraction:
+  fallback_model: "facebook/bart-large-mnli"
+  candidate_labels:
+    - "yes"
+    - "no"
+    - "maybe"
+
+# ── Claim Extraction ────────────────────────────────────────────────────────
+claim_extraction:
+  spacy_model: "en_core_sci_sm"
+  min_claim_tokens: 5
+  meta_prefixes:
+    - "based on"
+    - "according to"
+    - "in summary"
+    - "in conclusion"
+    - "overall"
+
+# ── NLI Verification ────────────────────────────────────────────────────────
+nli:
+  model: "cross-encoder/nli-deberta-v3-base"
+  batch_size: 32
+  label_map:
+    0: "contradiction"
+    1: "entailment"
+    2: "neutral"
+  thresholds:
+    entailment: 0.5
+    contradiction: 0.5
+
+# ── Trust Model ──────────────────────────────────────────────────────────────
+trust:
+  model_type: "logistic_regression"    # logistic_regression | heuristic | bayesian
+  regularization_C: 1.0               # L2 reg strength (tuned via CV)
+  cv_folds: 5
+  calibration_method: "platt"          # platt | isotonic
+  trust_levels:
+    high: 0.70
+    moderate: 0.40
+    # low: < 0.40
+
+# ── Evaluation ───────────────────────────────────────────────────────────────
+evaluation:
+  bootstrap_samples: 1000
+  confidence_level: 0.95
+  calibration_bins: 5
+  metrics:
+    correctness:
+      - accuracy
+      - macro_f1
+      - weighted_f1
+      - per_class_accuracy
+      - confusion_matrix
+      - prediction_distribution
+    trust:
+      - ece
+      - mce
+      - brier_score
+      - auroc
+      - auprc
+      - reliability_diagram
+    retrieval:
+      - recall_at_1
+      - recall_at_3
+      - recall_at_5
+      - mrr
+
+# ── Results ──────────────────────────────────────────────────────────────────
+results:
+  base_dir: "results"
+  retrieval_dir: "results/retrieval"
+  generation_dir: "results/generation"
+  verification_dir: "results/verification"
+  trust_dir: "results/trust"
+  final_dir: "results/final"

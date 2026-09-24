@@ -1,0 +1,40 @@
+{
+  "n_rows": 1000,
+  "n_cols": 10,
+  "columns": [
+    "pmid",
+    "question",
+    "contexts",
+    "labels",
+    "meshes",
+    "year",
+    "reasoning_required_pred",
+    "reasoning_free_pred",
+    "final_decision",
+    "long_answer"
+  ],
+  "class_distribution": {
+    "yes": 552,
+    "no": 338,
+    "maybe": 110
+  },
+  "class_pct": {
+    "yes": 55.2,
+    "no": 33.8,
+    "maybe": 11.0
+  },
+  "missing_values": {
+    "year": 58
+  },
+  "n_duplicates": 0,
+  "year_range": [
+    1989,
+    2017
+  ],
+  "n_missing_years": 58,
+  "context_count": {
+    "mean": 3.36,
+    "min": 1,
+    "max": 9
+  }
+}
