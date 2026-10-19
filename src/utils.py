@@ -106,7 +106,7 @@ def load_json(path: str | Path) -> Any:
 # ── GPU Memory ───────────────────────────────────────────────────────────────
 
 def print_gpu_memory(label: str = "") -> None:
-    """Print current GPU memory usage (if torch + CUDA available)."""
+    """Print current GPU/MPS memory usage (if torch + accelerator available)."""
     try:
         import torch
 
@@ -120,12 +120,15 @@ def print_gpu_memory(label: str = "") -> None:
                 f"Reserved: {reserved:.2f} GB | "
                 f"Total: {total:.2f} GB"
             )
-    except ImportError:
+        elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            allocated = torch.mps.current_allocated_memory() / 1e9
+            print(f"[MPS {label}] Allocated: {allocated:.2f} GB")
+    except (ImportError, AttributeError):
         pass
 
 
 def clear_gpu_memory() -> None:
-    """Aggressively free GPU memory."""
+    """Aggressively free GPU/MPS memory."""
     try:
         import gc
 
@@ -135,5 +138,8 @@ def clear_gpu_memory() -> None:
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
             torch.cuda.synchronize()
-    except ImportError:
+        elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            torch.mps.empty_cache()
+    except (ImportError, AttributeError):
         pass
+

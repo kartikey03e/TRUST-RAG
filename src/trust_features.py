@@ -94,7 +94,12 @@ class TrustFeatureBuilder:
         Parameters
         ----------
         retrieval_result : dict
-            Must contain: top1_score, score_margin, retrieved_pmids
+            Must contain:
+            - top1_score : float, top retrieved evidence score
+            - score_margin : float, score margin between top-1 and top-2
+            - candidate_pmids : list[str], PMIDs of the retained top-5 candidates
+              (if omitted, falls back to retrieved_pmids)
+            - evidence_pmids : list[str], PMIDs of generator evidence passages (optional)
         nli_result : dict
             Must contain: mean_max_entailment, frac_entailed,
                           max_contradiction, frac_contradicted
@@ -114,10 +119,23 @@ class TrustFeatureBuilder:
         # ── Retrieval features (3) ───────────────────────────────────
         top1_score = float(retrieval_result.get("top1_score", 0.0))
         score_margin = float(retrieval_result.get("score_margin", 0.0))
-        n_pmids = len(set(retrieval_result.get("retrieved_pmids", [])))
 
-        # Normalize n_pmids to [0, 1] range (max 5 unique PMIDs)
-        n_pmids_norm = min(n_pmids / 5.0, 1.0)
+        # Distinguish retrieval candidate pool (retained top-5 ranked candidates)
+        # from top-3 generator evidence passages.
+        # Definition: n_unique_pmids = number_of_unique_PMIDs_in_top_5 / 5.0
+        candidate_pmids = retrieval_result.get("candidate_pmids")
+        if candidate_pmids is None:
+            candidate_pmids = retrieval_result.get("retrieved_pmids", [])
+
+        if candidate_pmids:
+            # Deduplicate chunks from the same PMID
+            n_unique = len(set(candidate_pmids))
+            n_pmids_norm = min(n_unique / 5.0, 1.0)
+        else:
+            logger.warning(
+                f"Missing or empty retrieval candidates for question PMID: '{question_pmid}'; setting n_unique_pmids to 0.0"
+            )
+            n_pmids_norm = 0.0
 
         # ── NLI features (4) ────────────────────────────────────────
         mean_ent = float(nli_result.get("mean_max_entailment", 0.0))

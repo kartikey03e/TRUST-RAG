@@ -19,6 +19,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+import torch
 import faiss
 import numpy as np
 
@@ -364,6 +365,77 @@ class HybridRetriever:
 
         return blocks
 
+    def retrieve_with_candidates(
+        self,
+        query: str,
+        candidate_top_k: int = 5,
+        evidence_top_k: int = 3,
+        mode: str = "hybrid",
+    ) -> dict[str, Any]:
+        """Retrieve both candidate pool passages and generator evidence blocks.
+
+        Explicitly distinguishes:
+        1. Retrieval candidate pool: Initial BM25 and MedCPT passages retrieved before fusion.
+        2. Retained top-K candidate passages: Fused candidate passages ranked by RRF score (default top 5).
+        3. Top-M generator evidence passages: Deduplicated evidence blocks grouped by PMID (default top 3).
+
+        Parameters
+        ----------
+        query : str
+            Biomedical question.
+        candidate_top_k : int
+            Number of retained fused candidate passages for candidate-pool diversity features (default 5).
+        evidence_top_k : int
+            Number of PMID-level evidence blocks provided to the LLM generator (default 3).
+        mode : str
+            Retrieval mode: "hybrid", "dense", or "bm25".
+
+        Returns
+        -------
+        dict[str, Any]
+            Dictionary containing:
+            - "evidence_blocks": list[EvidenceBlock] (top evidence_top_k blocks for generator)
+            - "evidence_pmids": list[str] (PMIDs of evidence blocks)
+            - "evidence_scores": list[float] (scores of evidence blocks)
+            - "evidence_texts": list[str] (texts of evidence blocks)
+            - "candidate_passages": list[RetrievedPassage] (top candidate_top_k retained passages)
+            - "candidate_pmids": list[str] (PMIDs of top candidate_top_k passages)
+            - "top1_score": float
+            - "score_margin": float
+        """
+        if mode == "bm25":
+            fused = self._retrieve_bm25(query, self.initial_top_k)
+        elif mode == "dense":
+            fused = self._retrieve_dense(query, self.initial_top_k)
+        else:
+            bm25_results = self._retrieve_bm25(query, self.initial_top_k)
+            dense_results = self._retrieve_dense(query, self.initial_top_k)
+            fused = self._fuse_rrf(bm25_results, dense_results)
+
+        # Retained candidate pool (top-5 ranked candidate passages before grouping)
+        retained_candidates = fused[:candidate_top_k]
+        candidate_pmids = [p.pmid for p in retained_candidates]
+
+        # Generator evidence blocks (top-3 grouped by PMID)
+        evidence_blocks = self._group_by_pmid(fused, evidence_top_k)
+        evidence_scores = [round(b.score, 6) for b in evidence_blocks]
+        evidence_pmids = [b.pmid for b in evidence_blocks]
+        evidence_texts = [b.text for b in evidence_blocks]
+
+        top1 = evidence_scores[0] if evidence_scores else 0.0
+        margin = (evidence_scores[0] - evidence_scores[1]) if len(evidence_scores) > 1 else 0.0
+
+        return {
+            "evidence_blocks": evidence_blocks,
+            "evidence_pmids": evidence_pmids,
+            "evidence_scores": evidence_scores,
+            "evidence_texts": evidence_texts,
+            "candidate_passages": retained_candidates,
+            "candidate_pmids": candidate_pmids,
+            "top1_score": top1,
+            "score_margin": margin,
+        }
+
     def retrieve_batch(
         self,
         queries: list[str],
@@ -378,3 +450,4 @@ class HybridRetriever:
             One list of evidence blocks per query.
         """
         return [self.retrieve(q, top_k=top_k, mode=mode) for q in queries]
+

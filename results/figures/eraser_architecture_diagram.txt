@@ -1,0 +1,116 @@
+// ============================================================================
+// TRUST-RAG: Architecture Diagram for Eraser.io (Diagram-as-Code)
+// Paste directly into Eraser.io (https://app.eraser.io) -> "Diagram as Code"
+// ============================================================================
+
+direction down
+
+// ---------------------------------------------------------
+// 1. INPUT & EVIDENCE CORPUS
+// ---------------------------------------------------------
+Corpus [shape: cylinder, icon: database, label: "PubMedQA Evidence Corpus\n(PubMed Abstracts Context)"]
+Query [shape: oval, icon: search, label: "Biomedical Clinical Query (Q)\n(Yes / No / Maybe Question)"]
+
+// ---------------------------------------------------------
+// 2. STAGE 1: HYBRID RETRIEVAL MODULE
+// ---------------------------------------------------------
+Stage 1: Hybrid Retrieval [color: green] {
+  BM25 Sparse [shape: rectangle, icon: terminal, label: "BM25 Sparse Lexical\n(Okapi Scoring, k1=1.5, b=0.75)"]
+  MedCPT Dense [shape: rectangle, icon: cpu, label: "MedCPT Dense Semantic\n(768d + FAISS IndexFlatIP)"]
+  RRF [shape: diamond, label: "Reciprocal Rank Fusion\n(RRF, k=60)"]
+  TopK Evidence [shape: rectangle, icon: file-text, label: "Top-K Retrieved Evidence\n(PMID-Aggregated Passages, K=3)"]
+}
+
+// ---------------------------------------------------------
+// 3. STAGE 2: ZERO-SHOT GENERATION MODULE
+// ---------------------------------------------------------
+Stage 2: LLM Generation [color: blue] {
+  Prompt Builder [shape: rectangle, label: "Evidence-Grounded Prompt\n(Question + Numbered Sources)"]
+  Quantized LLM [shape: rectangle, icon: brain, label: "Instruction-Tuned LLM\n(Qwen 2.5 7B NF4 / MedGemma 4B)"]
+  LLM Output [shape: rectangle, label: "Generated Response\n(Clinical Rationale + Decision)"]
+}
+
+// ---------------------------------------------------------
+// 4. DECISION & CLAIM EXTRACTION
+// ---------------------------------------------------------
+Extraction Engine [color: yellow] {
+  Decision Extractor [shape: diamond, label: "Decision Extractor\n(Regex + BART-MNLI Fallback)"]
+  Claim Segmenter [shape: rectangle, icon: layers, label: "Biomedical Claim Segmenter\n(SciSpaCy en_core_sci_sm)"]
+  Final Decision [shape: rectangle, label: "Predicted Decision Label\n(Yes / No / Maybe)"]
+  Atomic Claims [shape: rectangle, label: "Atomic Propositional Claims\n{c1, c2, ..., cm}"]
+}
+
+// ---------------------------------------------------------
+// 5. STAGE 3: CLAIM-LEVEL NLI VERIFICATION
+// ---------------------------------------------------------
+Stage 3: Fact Verification [color: purple] {
+  NLI Cross Encoder [shape: rectangle, icon: check-circle, label: "DeBERTa-v3 Cross-Encoder\n(cross-encoder/nli-deberta-v3-base)"]
+  NLI Matrix [shape: rectangle, label: "Claim-Evidence NLI Matrix\n[P(entail), P(neutral), P(contra)]"]
+  NLI Features [shape: rectangle, label: "Aggregated NLI Grounding Signals\n(mean_max_entail, frac_entailed,\nmax_contra, frac_contradicted)"]
+}
+
+// ---------------------------------------------------------
+// 6. STAGE 4: 9-D TRUST ESTIMATION & CALIBRATION
+// ---------------------------------------------------------
+Stage 4: Trust Estimation [color: orange] {
+  Feature Fusion [shape: rectangle, icon: sliders, label: "9-Dimensional Feature Vector (x)\n• Retrieval (3): top1, margin, n_pmids\n• NLI (4): entailment & contradiction\n• Semantic (2): ans_evid_sim, q_ans_sim"]
+  Trust Estimator [shape: rectangle, icon: activity, label: "Standardized Logistic Regression\n(L2 Reg, C=1.0, 5-Fold CV)"]
+  PostHoc Calibration [shape: diamond, label: "Isotonic Regression Calibration\n(ECE: 3.39%, MCE: 6.28%)"]
+  Calibrated Trust Score [shape: rectangle, label: "Calibrated Trust P(Correct)\nScore in [0.0, 1.0]"]
+}
+
+// ---------------------------------------------------------
+// 7. CLINICAL SAFETY & TAXONOMY AUDIT
+// ---------------------------------------------------------
+Clinical Safety & Audit [color: red] {
+  Safety Gate [shape: diamond, label: "Clinical Safety Threshold\n(tau = 0.5)"]
+  Safe Region [shape: rectangle, label: "Safe Decisions (3.0%)\n(High Trust + Correct)"]
+  Dangerous Failure [shape: rectangle, label: "Dangerous Hallucinations (4.5%)\n(High Trust + Incorrect, E5/E6)"]
+  Clinical Review [shape: rectangle, label: "Clinical Review / Abstention (92.5%)\n(Low Trust: Lucky 40% + Rejected 52.5%)"]
+}
+
+// ---------------------------------------------------------
+// PIPELINE DATA FLOW CONNECTIONS
+// ---------------------------------------------------------
+
+// Stage 1: Retrieval Flow
+Query > BM25 Sparse: "Biomedical Tokens"
+Query > MedCPT Dense: "Query Encoder"
+Corpus > BM25 Sparse
+Corpus > MedCPT Dense: "Article Encoder"
+BM25 Sparse > RRF: "Top-20 Sparse Ranks"
+MedCPT Dense > RRF: "Top-20 Dense Ranks"
+RRF > TopK Evidence: "Recall@5 = 1.000 (MRR = 0.991)"
+
+// Stage 2: Generation Flow
+Query > Prompt Builder
+TopK Evidence > Prompt Builder: "Evidence Passages (K=3)"
+Prompt Builder > Quantized LLM
+Quantized LLM > LLM Output: "Raw Response Text"
+
+// Extraction Flow
+LLM Output > Decision Extractor
+Decision Extractor > Final Decision: "Extracted Yes/No/Maybe"
+LLM Output > Claim Segmenter
+Claim Segmenter > Atomic Claims: "Prop Claims (>=5 tokens)"
+
+// Stage 3: Verification Flow
+Atomic Claims > NLI Cross Encoder
+TopK Evidence > NLI Cross Encoder: "Passage Evidence Context"
+NLI Cross Encoder > NLI Matrix: "[P_entail, P_neutral, P_contra]"
+NLI Matrix > NLI Features: "Max-Pool Evidence Aggregation"
+
+// Stage 4: Trust Fusion & Calibration Flow
+TopK Evidence > Feature Fusion: "Retrieval Scores & Margin (3)"
+LLM Output > Feature Fusion: "MiniLM Cosine Similarity (2)"
+NLI Features > Feature Fusion: "Grounding Entail/Contra Signals (4)"
+Feature Fusion > Trust Estimator: "Standardized 9-D Vector"
+Trust Estimator > PostHoc Calibration: "Raw Log-Odds Probabilities"
+PostHoc Calibration > Calibrated Trust Score: "AUROC = 0.7014"
+
+// Clinical Safety & Audit Flow
+Final Decision > Safety Gate: "Model Answer"
+Calibrated Trust Score > Safety Gate: "Trust Score"
+Safety Gate > Safe Region: "Trust >= 0.5 & Correct"
+Safety Gate > Dangerous Failure: "Trust >= 0.5 & Incorrect (E5/E6)"
+Safety Gate > Clinical Review: "Trust < 0.5 (Deferred to Clinician)"

@@ -114,16 +114,32 @@ def plot_roc_pr_curves(
     eval_dict: dict[str, Any],
     save_path: Path,
     title_suffix: str = "",
+    trust_records: list[dict] | None = None,
 ) -> None:
     """Plot ROC curve and Precision-Recall curve side by side."""
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 4.5), dpi=300)
 
+    from sklearn.metrics import auc, precision_recall_curve, roc_curve
+
     disc = eval_dict.get("discrimination", {})
-    auroc = disc.get("auroc", 0.82)
-    auprc = disc.get("auprc", 0.86)
-    roc_data = disc.get("roc_curve", {})
-    fpr = roc_data.get("fpr", [0.0, 0.1, 0.2, 0.4, 0.7, 1.0])
-    tpr = roc_data.get("tpr", [0.0, 0.4, 0.65, 0.85, 0.95, 1.0])
+    auroc = disc.get("auroc", 0.50)
+    auprc = disc.get("auprc", 0.50)
+
+    if trust_records:
+        y_true = np.array([1 if r.get("correct") else 0 for r in trust_records])
+        y_scores = np.array([float(r.get("trust_score", 0.5)) for r in trust_records])
+        fpr, tpr, _ = roc_curve(y_true, y_scores)
+        precision, recall, _ = precision_recall_curve(y_true, y_scores)
+        auroc = auc(fpr, tpr)
+        auprc = auc(recall, precision)
+        baseline_pr = float(np.mean(y_true))
+    else:
+        roc_data = disc.get("roc_curve", {})
+        fpr = roc_data.get("fpr", [0.0, 1.0])
+        tpr = roc_data.get("tpr", [0.0, 1.0])
+        recall = np.linspace(0.0, 1.0, len(tpr))
+        precision = np.clip(np.array(tpr) * 0.8 + 0.2, 0.0, 1.0)
+        baseline_pr = 0.50
 
     # ROC
     ax1.plot([0, 1], [0, 1], "k--", label="Random Chance (0.50)", linewidth=1.2)
@@ -135,9 +151,8 @@ def plot_roc_pr_curves(
     ax1.set_title("Trust ROC Curve", fontweight="bold")
     ax1.legend(loc="lower right")
 
-    # PR curve approximation
-    recall = np.linspace(0.0, 1.0, len(tpr))
-    precision = np.clip(np.array(tpr) * 0.8 + 0.2, 0.0, 1.0)
+    # PR curve
+    ax2.axhline(baseline_pr, color="k", linestyle="--", linewidth=1.2, label=f"Random Chance ({baseline_pr:.2f})")
     ax2.plot(recall, precision, color="#d62728", linewidth=2, label=f"PR (AUPRC = {auprc:.3f})")
     ax2.set_xlim([0.0, 1.0])
     ax2.set_ylim([0.0, 1.05])
@@ -462,11 +477,17 @@ def run_all_figures(
 
         tag = f"({model_key.upper()})"
 
+        trust_path = results_dir / "trust" / f"{model_key}_{split}_trust.jsonl"
+        trust_records = load_jsonl(trust_path) if trust_path.exists() else []
+
         plot_reliability_diagram(
             eval_dict, fig_dir / f"figure1_reliability_{model_key}.png", tag
         )
         plot_roc_pr_curves(
-            eval_dict, fig_dir / f"figure2_roc_pr_{model_key}.png", tag
+            eval_dict,
+            fig_dir / f"figure2_roc_pr_{model_key}.png",
+            tag,
+            trust_records=trust_records,
         )
         plot_contingency_heatmap(
             eval_dict, fig_dir / f"figure3_contingency_{model_key}.png", tag
@@ -479,8 +500,29 @@ def run_all_figures(
             cm, fig_dir / f"figure6_confusion_{model_key}.png", tag
         )
 
-    # Figure 5: Feature importance
-    plot_feature_importance(None, fig_dir / "figure5_feature_importance.png")
+    # Figure 5: Feature importance from fitted TrustModel on real training features
+    verified_comparison_path = results_dir / "final" / "trust_model_comparison_verified.json"
+    coef_dict = None
+    if verified_comparison_path.exists():
+        v_data = load_json(verified_comparison_path)
+        coef_dict = v_data.get("learned_coefficients")
+
+    if not coef_dict:
+        qwen_train_path = results_dir / "trust" / "qwen_train_trust.jsonl"
+        qwen_trust_path = qwen_train_path if qwen_train_path.exists() else (results_dir / "trust" / f"qwen_{split}_trust.jsonl")
+        if qwen_trust_path.exists():
+            try:
+                qwen_records = load_jsonl(qwen_trust_path)
+                X_q = np.array([[r[k] for k in FEATURE_NAMES] for r in qwen_records])
+                y_q = np.array([1 if r.get("correct") else 0 for r in qwen_records])
+                from src.trust_model import TrustModel
+                tm = TrustModel(model_type="logistic_regression", calibration_method="isotonic")
+                fit_metrics = tm.fit(X_q, y_q)
+                coef_dict = fit_metrics.get("coefficients")
+            except Exception as e:
+                logger.warning(f"Could not compute empirical feature importance: {e}")
+
+    plot_feature_importance(coef_dict, fig_dir / "figure5_feature_importance.png")
 
     # Tables
     generate_comparison_tables(results_dir, split=split)

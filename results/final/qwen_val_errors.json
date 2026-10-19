@@ -1,0 +1,1383 @@
+{
+  "n_total": 200,
+  "n_correct": 86,
+  "n_incorrect": 114,
+  "error_counts": {
+    "E6_MISINTERPRETATION": 34,
+    "E5_HALLUCINATION": 78,
+    "E1_RETRIEVAL_FAILURE": 1,
+    "E2_RANKING_FAILURE": 1
+  },
+  "error_rates": {
+    "E6_MISINTERPRETATION": 0.2982,
+    "E5_HALLUCINATION": 0.6842,
+    "E1_RETRIEVAL_FAILURE": 0.0088,
+    "E2_RANKING_FAILURE": 0.0088
+  },
+  "gold_decision_error_distribution": {
+    "no": {
+      "E6_MISINTERPRETATION": 13,
+      "E5_HALLUCINATION": 32
+    },
+    "yes": {
+      "E5_HALLUCINATION": 41,
+      "E6_MISINTERPRETATION": 17,
+      "E1_RETRIEVAL_FAILURE": 1,
+      "E2_RANKING_FAILURE": 1
+    },
+    "maybe": {
+      "E5_HALLUCINATION": 5,
+      "E6_MISINTERPRETATION": 4
+    }
+  },
+  "classifications": [
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "19504993",
+      "question": "It's Fournier's gangrene still dangerous?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.0621,
+      "max_contradiction": 0.0781,
+      "question_pmid": "18801797",
+      "question": "Household and food shopping environments: do they play a role in socioeconomic inequalities in fruit and vegetable consumption?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9904,
+      "question_pmid": "9550200",
+      "question": "Does lunar position influence the time of delivery?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9979,
+      "question_pmid": "22042121",
+      "question": "Perioperative care in an animal model for training in abdominal surgery: is it necessary a preoperative fasting?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9999,
+      "question_pmid": "15477551",
+      "question": "Chronic progressive cervical myelopathy with HTLV-I infection: Variant form of HAM/TSP?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9992,
+      "question_pmid": "17312514",
+      "question": "Does quilting suture prevent seroma in abdominoplasty?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "17105833",
+      "question": "Empiric treatment of uncomplicated urinary tract infection with fluoroquinolones in older women in Israel: another lost treatment option?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9989,
+      "question_pmid": "18843057",
+      "question": "Can you deliver accurate tidal volume by manual resuscitator?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.0012,
+      "max_contradiction": 0.0092,
+      "question_pmid": "21459725",
+      "question": "Xanthogranulomatous cholecystitis: a premalignant condition?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "27928673",
+      "question": "Do ART patients face higher C-section rates during their stage of delivery?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9967,
+      "question_pmid": "16778275",
+      "question": "Is routine chest radiography after transbronchial biopsy necessary?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "21726930",
+      "question": "Is endometrial polyp formation associated with increased expression of vascular endothelial growth factor and transforming growth factor-beta1?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "21457946",
+      "question": "Are there progressive brain changes in schizophrenia?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "19643525",
+      "question": "Can vaginal pH be measured from the wet mount slide?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "23240452",
+      "question": "Can we predict urinary stone composition based on an analysis of microelement concentration in the hair and urine?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "26879871",
+      "question": "Does depression diagnosis and antidepressant prescribing vary by location?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.283,
+      "max_contradiction": 0.3816,
+      "question_pmid": "28196511",
+      "question": "Antiretroviral therapy related adverse effects: Can sub-Saharan Africa cope with the new \"test and treat\" policy of the World Health Organization?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9994,
+      "question_pmid": "10966337",
+      "question": "A short stay or 23-hour ward in a general and academic children's hospital: are they effective?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "10158597",
+      "question": "Does a dedicated discharge coordinator improve the quality of hospital discharge?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.999,
+      "question_pmid": "28127977",
+      "question": "Are serum leptin levels a prognostic factor in advanced lung cancer?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9993,
+      "question_pmid": "11458136",
+      "question": "Does managed care enable more low income persons to identify a usual source of care?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "22680064",
+      "question": "Can third trimester ultrasound predict the presentation of the first twin at delivery?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "26163474",
+      "question": "Is there a connection between sublingual varices and hypertension?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.1363,
+      "max_contradiction": 0.0098,
+      "question_pmid": "10173769",
+      "question": "Longer term quality of life and outcome in stroke patients: is the Barthel index alone an adequate measure of outcome?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9856,
+      "question_pmid": "27136599",
+      "question": "Is it safe to perform rectal anastomosis in gynaecological debulking surgery without a diverting stoma?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.1256,
+      "max_contradiction": 0.0153,
+      "question_pmid": "18375490",
+      "question": "Are laboratories reporting serum quantitative hCG results correctly?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 1.0,
+      "question_pmid": "24652474",
+      "question": "Clinical identifiers for early-stage primary/idiopathic adhesive capsulitis: are we seeing the real picture?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.1432,
+      "max_contradiction": 0.0063,
+      "question_pmid": "18269157",
+      "question": "Biomechanical and wound healing characteristics of corneas after excimer laser keratorefractive surgery: is there a difference between advanced surface ablation and sub-Bowman's keratomileusis?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.3227,
+      "max_contradiction": 0.179,
+      "question_pmid": "16735905",
+      "question": "Does the severity of obstructive sleep apnea predict patients requiring high continuous positive airway pressure?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.1258,
+      "max_contradiction": 0.3727,
+      "question_pmid": "20549895",
+      "question": "Health habits and vaccination status of Lebanese residents: are future doctors applying the rules of prevention?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "25982163",
+      "question": "Appendectomy timing: Will delayed surgery increase the complications?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.1432,
+      "max_contradiction": 0.0052,
+      "question_pmid": "17306983",
+      "question": "Is size-reducing ascending aortoplasty with external reinforcement an option in modern aortic surgery?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9999,
+      "question_pmid": "18926458",
+      "question": "Are octogenarians at high risk for carotid endarterectomy?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9986,
+      "question_pmid": "19546588",
+      "question": "Does increasing blood pH stimulate protein synthesis in dialysis patients?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "14968373",
+      "question": "Can CT predict the level of CSF block in tuberculous hydrocephalus?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "27858166",
+      "question": "Traumatic aortic injury: does the anatomy of the aortic arch influence aortic trauma severity?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.1425,
+      "max_contradiction": 0.0283,
+      "question_pmid": "20629769",
+      "question": "Is primary angioplasty an acceptable alternative to thrombolysis?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9999,
+      "question_pmid": "11566686",
+      "question": "In vivo visualization of pyloric mucosal hypertrophy in infants with hypertrophic pyloric stenosis: is there an etiologic role?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.0521,
+      "max_contradiction": 0.0433,
+      "question_pmid": "11483547",
+      "question": "Does the aggressive use of polyvalent antivenin for rattlesnake bites result in serious acute side effects?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "25735444",
+      "question": "Rectal cancer threatening or affecting the prostatic plane: is partial prostatectomy oncologically adequate?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9998,
+      "question_pmid": "19578820",
+      "question": "Are opioid dependence and methadone maintenance treatment (MMT) documented in the medical record?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9955,
+      "question_pmid": "18019905",
+      "question": "The use of audit to identify maternal mortality in different settings: is it just a difference between the rich and the poor?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.2511,
+      "max_contradiction": 0.3886,
+      "question_pmid": "19913785",
+      "question": "Is it necessary to insert a nasobiliary drainage tube routinely after endoscopic clearance of the common bile duct in patients with choledocholithiasis-induced cholangitis?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9998,
+      "question_pmid": "14652839",
+      "question": "Does the sequence of clamp application during open abdominal aortic aneurysm surgery influence distal embolisation?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.2544,
+      "max_contradiction": 0.0075,
+      "question_pmid": "17462393",
+      "question": "Does normothermic normokalemic simultaneous antegrade/retrograde perfusion improve myocardial oxygenation and energy metabolism for hypertrophied hearts?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9993,
+      "question_pmid": "17916877",
+      "question": "Intravenous administration of metoclopramide by 2 min bolus vs 15 min infusion: does it affect the improvement of headache while reducing the side effects?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9966,
+      "question_pmid": "25985014",
+      "question": "Is ganglionated plexi ablation during Maze IV procedure beneficial for postoperative long-term stable sinus rhythm?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9982,
+      "question_pmid": "11833948",
+      "question": "Does a delay in transfer to a rehabilitation unit for older people affect outcome after fracture of the proximal femur?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.8872,
+      "question_pmid": "24669960",
+      "question": "Does the sex of acute stroke patients influence the effectiveness of rt-PA?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.0081,
+      "max_contradiction": 0.0089,
+      "question_pmid": "23337545",
+      "question": "Is acute fibrinous and organizing pneumonia the expression of immune dysregulation?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9928,
+      "question_pmid": "12221908",
+      "question": "The HELPP syndrome--evidence of a possible systemic inflammatory response in pre-eclampsia?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "22990761",
+      "question": "Cardiovascular risk in a rural adult West African population: is resting heart rate also relevant?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9998,
+      "question_pmid": "22350859",
+      "question": "Can pictorial warning labels on cigarette packages address smoking-related health disparities?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "19131405",
+      "question": "Diffusion-weighted echo-planar MR imaging of primary parotid gland tumors: is a prediction of different histologic subtypes possible?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "22532370",
+      "question": "Are increased carotid artery pulsatility and resistance indexes early signs of vascular abnormalities in young obese males?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "23386371",
+      "question": "CPAP therapy in patients with idiopathic pulmonary fibrosis and obstructive sleep apnea: does it offer a better quality of life and sleep?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.8722,
+      "question_pmid": "15053041",
+      "question": "Do acute changes in heart rate by isoproterenol affect aortic stiffness in patients with hypertension?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "15528969",
+      "question": "Is expert breast pathology assessment necessary for the management of ductal carcinoma in situ ?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "22302761",
+      "question": "Can fractional lasers enhance transdermal absorption of topical lidocaine in an in vivo animal model?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "16772913",
+      "question": "A comparison of 500 prefilled textured saline breast implants versus 500 standard textured saline breast implants: is there a difference in deflation rates?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9991,
+      "question_pmid": "25274085",
+      "question": "Can multiple SNP testing in BRCA2 and BRCA1 female carriers be used to improve risk prediction models in conjunction with clinical assessment?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "19822586",
+      "question": "Autoerotic asphyxiation: secret pleasure--lethal outcome?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "19542542",
+      "question": "Is there a uniform basal endometrial gene expression profile during the implantation window in women who became pregnant in a subsequent ICSI cycle?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.0054,
+      "max_contradiction": 0.0049,
+      "question_pmid": "23761381",
+      "question": "Is calibration the cause of variation in liquid chromatography tandem mass spectrometry testosterone measurement?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "22694248",
+      "question": "Is there a model to teach and practice retroperitoneoscopic nephrectomy?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "24799031",
+      "question": "Is diffusion-weighted imaging a significant indicator of the development of vascularization in hypovascular hepatocellular lesions?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9884,
+      "question_pmid": "27146470",
+      "question": "Are tuberculosis patients adherent to prescribed treatments in China?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "21789019",
+      "question": "Do elderly cancer patients have different care needs compared with younger ones?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9966,
+      "question_pmid": "17208539",
+      "question": "Are the long-term results of the transanal pull-through equal to those of the transabdominal pull-through?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.2006,
+      "max_contradiction": 0.004,
+      "question_pmid": "17704864",
+      "question": "Is laparoscopic adrenalectomy safe and effective for adrenal masses larger than 7 cm?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9995,
+      "question_pmid": "18378554",
+      "question": "Are wandering and physically nonaggressive agitation equivalent?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "11296674",
+      "question": "Prostatic syndrome and pleural effusion: are they different diseases?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.0909,
+      "max_contradiction": 0.0098,
+      "question_pmid": "12846929",
+      "question": "Quality of life in lung cancer patients: does socioeconomic status matter?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "22108230",
+      "question": "Is the fibronectin-aggrecan complex present in cervical disk disease?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "24698298",
+      "question": "MR arthrography of the shoulder: do we need local anesthesia?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.1661,
+      "max_contradiction": 0.017,
+      "question_pmid": "11776681",
+      "question": "Is intrapartum vibroacoustic stimulation an effective predictor of fetal acidosis?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "17914515",
+      "question": "Suturing of the nasal septum after septoplasty, is it an effective alternative to nasal packing?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9994,
+      "question_pmid": "24783217",
+      "question": "Can ki-67 play a role in prediction of breast cancer patients' response to neoadjuvant chemotherapy?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "12153648",
+      "question": "Does birth center care during a woman's first pregnancy have any impact on her future reproduction?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "12765819",
+      "question": "Spinal subdural hematoma: a sequela of a ruptured intracranial aneurysm?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9953,
+      "question_pmid": "14745753",
+      "question": "Is half-dose contrast-enhanced three-dimensional MR angiography sufficient for the abdominal aorta and pelvis?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "20382292",
+      "question": "Knee extensor strength, dynamic stability, and functional ambulation: are they related in Parkinson's disease?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9952,
+      "question_pmid": "10456814",
+      "question": "Does desflurane alter left ventricular function when used to control surgical stimulation during aortic surgery?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "21074975",
+      "question": "Ultra high risk (UHR) for psychosis criteria: are there different levels of risk for transition to psychosis?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "24446763",
+      "question": "The secular growth acceleration: does it appear during fetal life?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "17054994",
+      "question": "Does frozen section alter surgical management of multinodular thyroid disease?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "21801416",
+      "question": "The effect of an intracerebroventricular injection of metformin or AICAR on the plasma concentrations of melatonin in the ewe: potential involvement of AMPK?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9975,
+      "question_pmid": "19575307",
+      "question": "Does glomerular hyperfiltration in pregnancy damage the kidney in women with more parities?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9982,
+      "question_pmid": "22251324",
+      "question": "Does performance in selection processes predict performance as a dental student?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.8871,
+      "question_pmid": "20156655",
+      "question": "Scrotal approach to both palpable and impalpable undescended testes: should it become our first choice?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.6287,
+      "question_pmid": "22519710",
+      "question": "Will clinical studies elucidate the connection between the length of storage of transfused red blood cells and clinical outcomes?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "22758782",
+      "question": "Regional anesthesia as compared with general anesthesia for surgery in geriatric patients with hip fracture: does it decrease morbidity, mortality, and health care costs?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "16414216",
+      "question": "Are endometrial polyps from pre-menopausal women similar to post-menopausal women?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "26923375",
+      "question": "Is non-invasive diagnosis of esophageal varices in patients with compensated hepatic cirrhosis possible by duplex Doppler ultrasonography?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9992,
+      "question_pmid": "27592038",
+      "question": "Does multi-modal cervical physical therapy improve tinnitus in patients with cervicogenic somatic tinnitus?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9999,
+      "question_pmid": "11955750",
+      "question": "Does escalation of the apical dose change treatment outcome in beta-radiation of posterior choroidal melanomas with 106Ru plaques?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9956,
+      "question_pmid": "25981682",
+      "question": "Preparing patients at high risk of falls for discharge home after rehabilitation: Do we meet the guidelines?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "23149821",
+      "question": "Should HIV-infected patients be screened for silent myocardial ischaemia using gated myocardial perfusion SPECT?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9811,
+      "question_pmid": "23517744",
+      "question": "Is solitary kidney really more resistant to ischemia?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.1678,
+      "max_contradiction": 0.007,
+      "question_pmid": "20130378",
+      "question": "Is low birth weight a risk indicator for congenital cytomegalovirus infection?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.7992,
+      "question_pmid": "26370095",
+      "question": "Are financial incentives cost-effective to support smoking cessation during pregnancy?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "21569408",
+      "question": "Does context matter for the relationship between deprivation and all-cause mortality?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.0007,
+      "max_contradiction": 0.2358,
+      "question_pmid": "17483607",
+      "question": "Does topical N-acetylcysteine application after myringotomy cause severe otorrhea?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "15787677",
+      "question": "Does aerobic fitness influence microvascular function in healthy adults at risk of developing Type 2 diabetes?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9957,
+      "question_pmid": "22668712",
+      "question": "Internal derangement of the temporomandibular joint: is there still a place for ultrasound?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9998,
+      "question_pmid": "20736887",
+      "question": "Is decompressive surgery effective for spinal cord sarcoidosis accompanied with compressive cervical myelopathy?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9709,
+      "question_pmid": "21873082",
+      "question": "Is the h-index predictive of greater NIH funding success among academic radiologists?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "25987398",
+      "question": "The influence of atmospheric pressure on aortic aneurysm rupture--is the diameter of the aneurysm important?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "24270957",
+      "question": "Is combined therapy more effective than growth hormone or hyperbaric oxygen alone in the healing of left ischemic and non-ischemic colonic anastomoses?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "10877371",
+      "question": "Does head positioning influence anterior chamber depth in pseudoexfoliation syndrome?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.0009,
+      "max_contradiction": 0.4143,
+      "question_pmid": "27216167",
+      "question": "Gynecological cancer alarm symptoms: is contact with specialist care associated with lifestyle and socioeconomic status?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "20073599",
+      "question": "Do liquid-based preparations of urinary cytology perform differently than classically prepared cases?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "25752725",
+      "question": "Schizophrenia patients with high intelligence: A clinically distinct sub-type of schizophrenia?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9977,
+      "question_pmid": "15943725",
+      "question": "Should serum pancreatic lipase replace serum amylase as a biomarker of acute pancreatitis?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "21618245",
+      "question": "Does surgery or radiation therapy impact survival for patients with extrapulmonary small cell cancers?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.0013,
+      "max_contradiction": 0.0921,
+      "question_pmid": "21481154",
+      "question": "Improvements in survival of gynaecological cancer in the Anglia region of England: are these an effect of centralisation of care and use of multidisciplinary management?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9999,
+      "question_pmid": "26452334",
+      "question": "Measurement of head and neck paragangliomas: is volumetric analysis worth the effort?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "25756710",
+      "question": "Can emergency physicians accurately and reliably assess acute vertigo in the emergency department?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.2269,
+      "max_contradiction": 0.0277,
+      "question_pmid": "23453079",
+      "question": "Does prostate morphology affect outcomes after holmium laser enucleation?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.001,
+      "max_contradiction": 0.0065,
+      "question_pmid": "27050489",
+      "question": "The Prevalence of Incidentally Detected Idiopathic Misty Mesentery on\u00a0Multidetector Computed Tomography: Can Obesity Be the Triggering Cause?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "20971618",
+      "question": "Are lifetime prevalence of impetigo, molluscum and herpes infection really increased in children having atopic dermatitis?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9999,
+      "question_pmid": "20297950",
+      "question": "Proof of concept study: does fenofibrate have a role in sleep apnoea syndrome?"
+    },
+    {
+      "error_type": "E1_RETRIEVAL_FAILURE",
+      "description": "Gold PMID not retrieved in top-5",
+      "gold_pmid_rank": 0,
+      "question_pmid": "16147837",
+      "question": "Is grandmultiparity an independent risk factor for adverse perinatal outcomes?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.7075,
+      "question_pmid": "22825590",
+      "question": "Are behavioural risk factors to be blamed for the conversion from optimal blood pressure to hypertensive status in Black South Africans?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9993,
+      "question_pmid": "12595848",
+      "question": "Is specialty care associated with improved survival of patients with congestive heart failure?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "23414523",
+      "question": "Does binge drinking during early pregnancy increase the risk of psychomotor deficits?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "22075911",
+      "question": "Is there a differential in the dental health of new recruits to the British Armed Forces?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "17971187",
+      "question": "Cholesterol screening in school children: is family history reliable to choose the ones to screen?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "23677366",
+      "question": "Do oblique views add value in the diagnosis of spondylolysis in adolescents?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9668,
+      "question_pmid": "26304701",
+      "question": "Can nurse-led preoperative education reduce anxiety and postoperative complications of patients undergoing cardiac surgery?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9989,
+      "question_pmid": "15466981",
+      "question": "Prostate-specific antigen and free prostate-specific antigen in the early detection of prostate cancer: do combination tests improve detection?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9911,
+      "question_pmid": "19640728",
+      "question": "Surgical treatment of prosthetic valve endocarditis in patients with double prostheses: is single-valve replacement safe?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9997,
+      "question_pmid": "7664228",
+      "question": "Discharging patients earlier from Winnipeg hospitals: does it adversely affect quality of care?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "18783922",
+      "question": "Do cytokines have any role in epilepsy?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "15703931",
+      "question": "Does diabetes mellitus influence the efficacy of FDG-PET in the diagnosis of cervical cancer?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9935,
+      "question_pmid": "21745056",
+      "question": "Global Longitudinal Pathway: has medical education curriculum influenced medical students' skills and attitudes toward culturally diverse populations?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.0526,
+      "max_contradiction": 0.5677,
+      "question_pmid": "16538201",
+      "question": "Does use of hydrophilic guidewires significantly improve technical success rates of peripheral PTA?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "22023714",
+      "question": "Does delivery mode affect women's postpartum quality of life in rural China?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "25793749",
+      "question": "Do Web-based and clinic samples of gay men living with HIV differ on self-reported physical and psychological symptoms?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "21952349",
+      "question": "Remote ischemic postconditioning: does it protect against ischemic damage in percutaneous coronary revascularization?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9999,
+      "question_pmid": "16991071",
+      "question": "Rotator cuff tear--an occupational disease?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9978,
+      "question_pmid": "18799291",
+      "question": "Is the histidine triad nucleotide-binding protein 1 (HINT1) gene a candidate for schizophrenia?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "21166749",
+      "question": "Is patient outcome compromised during the initial experience with robot-assisted radical cystectomy?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "18065862",
+      "question": "Can the postoperative pain level be predicted preoperatively?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9977,
+      "question_pmid": "27405146",
+      "question": "PREVALENCE OF THE STREPTOCOCUS AGALACTIAE IN THE PREGNANT WOMAN FROM THE AUTONOMIC CITY OF MELILLA: IS CULTURE A DETERMINANT FACTOR?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9999,
+      "question_pmid": "23539689",
+      "question": "Cold preparation use in young children after FDA warnings: do concerns still exist?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "12006913",
+      "question": "Do lipids, blood pressure, diabetes, and smoking confer equal risk of myocardial infarction in women as in men?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9995,
+      "question_pmid": "21756515",
+      "question": "Does solid culture for tuberculosis influence clinical decision making in India?"
+    },
+    {
+      "error_type": "E2_RANKING_FAILURE",
+      "description": "Gold PMID retrieved but not rank 1",
+      "gold_pmid_rank": 2,
+      "question_pmid": "24599411",
+      "question": "Is gastric cancer different in Korea and the United States?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9962,
+      "question_pmid": "11882828",
+      "question": "Does tranexamic acid reduce desmopressin-induced hyperfibrinolysis?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "25819796",
+      "question": "Literacy after cerebral hemispherectomy: Can the isolated right hemisphere read?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9891,
+      "question_pmid": "8375607",
+      "question": "Is the breast best for children with a family history of atopy?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.0033,
+      "max_contradiction": 0.0084,
+      "question_pmid": "17444776",
+      "question": "Is the holmium:YAG laser the best intracorporeal lithotripter for the ureter?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.8835,
+      "question_pmid": "18507507",
+      "question": "The promise of specialty pharmaceuticals: are they worth the price?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9991,
+      "question_pmid": "18847643",
+      "question": "Therapeutic anticoagulation in the trauma patient: is it safe?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9982,
+      "question_pmid": "10375486",
+      "question": "Are variations in the use of carotid endarterectomy explained by population Need?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9902,
+      "question_pmid": "15539888",
+      "question": "Is the atopy patch test with house dust mites specific for atopic dermatitis?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.0021,
+      "max_contradiction": 0.0014,
+      "question_pmid": "19299238",
+      "question": "Aromatase inhibitor-related musculoskeletal symptoms: is preventing osteoporosis the key to eliminating these symptoms?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "21669959",
+      "question": "Secondhand smoke risk in infants discharged from an NICU: potential for significant health disparities?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "19648304",
+      "question": "Does sonographic needle guidance affect the clinical outcome of intraarticular injections?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "14992556",
+      "question": "Artefacts in 24-h pharyngeal and oesophageal pH monitoring: is simplification of pH data analysis feasible?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "25501465",
+      "question": "Evaluation of pediatric VCUG at an academic children's hospital: is the radiographic scout image necessary?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.0041,
+      "max_contradiction": 0.3047,
+      "question_pmid": "8017535",
+      "question": "Substance use and HIV-related sexual behaviors among US high school students: are they related?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "23999452",
+      "question": "Does hypoglycaemia increase the risk of cardiovascular events?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9962,
+      "question_pmid": "9792366",
+      "question": "Is HIV/STD control in Jamaica making a difference?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9815,
+      "question_pmid": "23348330",
+      "question": "Nasal fractures:  is closed reduction satisfying?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "17244100",
+      "question": "Can patient coaching reduce racial/ethnic disparities in cancer pain control?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9994,
+      "question_pmid": "9465206",
+      "question": "\"Occult\" posttraumatic lesions of the knee: can magnetic resonance substitute for diagnostic arthroscopy?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9974,
+      "question_pmid": "10577397",
+      "question": "Is a pressor necessary during aortic perfusion and oxygenation therapy of cardiac arrest?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9969,
+      "question_pmid": "21914194",
+      "question": "Health care for immigrants in Europe: is there still consensus among country experts about principles of good practice?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "27281318",
+      "question": "Can Flexible Instruments Create Adequate Femoral Tunnel Lengths at 90\u00b0 of Knee Flexion in Anterior Cruciate Ligament Reconstruction?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9998,
+      "question_pmid": "12142826",
+      "question": "Pertrochanteric fractures: is there an advantage to an intramedullary nail?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "23848044",
+      "question": "Does oxybutynin hydrochloride cause arrhythmia in children with bladder dysfunction?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.0014,
+      "max_contradiction": 0.017,
+      "question_pmid": "22236315",
+      "question": "Is distance to provider a barrier to care for medicaid patients with breast, colorectal, or lung cancer?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "19130332",
+      "question": "Is the zeolite hemostatic agent beneficial in reducing blood loss during arterial injury?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.8712,
+      "question_pmid": "24476003",
+      "question": "Is nasogastric decompression useful in prevention of leaks after laparoscopic sleeve gastrectomy?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "18251357",
+      "question": "Does histologic chorioamnionitis correspond to clinical chorioamnionitis?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9971,
+      "question_pmid": "26601554",
+      "question": "Do viral infections have a role in benign paroxysmal positional vertigo?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "25043083",
+      "question": "Are failures of anterior cruciate ligament reconstruction associated with steep posterior tibial slopes?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "25779009",
+      "question": "Bactericidal activity of 3 cutaneous/mucosal antiseptic solutions in the presence of interfering substances: Improvement of the NF EN 13727 European Standard?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.1036,
+      "max_contradiction": 0.0758,
+      "question_pmid": "26867834",
+      "question": "Is Alveolar Macrophage Phagocytic Dysfunction in Children With Protracted Bacterial Bronchitis a Forerunner to Bronchiectasis?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "22491528",
+      "question": "Combining process indicators to evaluate quality of care for surgical patients with colorectal cancer: are scores consistent with short-term outcome?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9491,
+      "question_pmid": "27448572",
+      "question": "Is duration of psychological treatment for depression related to return into treatment?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "15502995",
+      "question": "Does the early adopter of drugs exist?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9467,
+      "question_pmid": "16872243",
+      "question": "Can decisional algorithms replace global introspection in the individual causality assessment of spontaneously reported ADRs?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.0318,
+      "max_contradiction": 0.0473,
+      "question_pmid": "22954812",
+      "question": "Are bipolar disorders underdiagnosed in patients with depressive episodes?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9997,
+      "question_pmid": "25487603",
+      "question": "Analysis of the epidemiological pattern of Shigellosis in Barcelona between 1988 and 2012: Is it an emerging sexually transmitted infection?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "17598882",
+      "question": "Is breast cancer prognosis inherited?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.987,
+      "question_pmid": "15919266",
+      "question": "Adjuvant radiation of stage III thymoma: is it necessary?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.0009,
+      "max_contradiction": 0.0019,
+      "question_pmid": "18243752",
+      "question": "Should chest wall irradiation be included after mastectomy and negative node breast cancer?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "23774337",
+      "question": "Does the central venous pressure predict fluid responsiveness?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "18182265",
+      "question": "Body diffusion-weighted MR imaging of uterine endometrial cancer: is it helpful in the detection of cancer in nonenhanced MR imaging?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "18832500",
+      "question": "Systematic use of patient-rated depression severity monitoring: is it helpful and feasible in clinical psychiatry?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.2594,
+      "max_contradiction": 0.061,
+      "question_pmid": "18619710",
+      "question": "Patient comprehension of emergency department care and instructions: are patients aware of when they do not understand?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9999,
+      "question_pmid": "19575104",
+      "question": "Do foreign bodies migrate through the body towards the heart?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "24245816",
+      "question": "Is trabecular bone related to primary stability of miniscrews?"
+    },
+    {
+      "error_type": "E6_MISINTERPRETATION",
+      "description": "Claims neither entailed nor contradicted",
+      "mean_entailment": 0.0028,
+      "max_contradiction": 0.0118,
+      "question_pmid": "9603166",
+      "question": "Should all human immunodeficiency virus-infected patients with end-stage renal disease be excluded from transplantation?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "14551704",
+      "question": "Can communication with terminally ill patients be taught?"
+    },
+    {
+      "error_type": "CORRECT",
+      "description": "Answer is correct",
+      "question_pmid": "23448747",
+      "question": "Do older adults with cancer fall more often?"
+    },
+    {
+      "error_type": "E5_HALLUCINATION",
+      "description": "Claims contradict the evidence",
+      "max_contradiction": 0.9947,
+      "question_pmid": "23870157",
+      "question": "Are intraoperative precursor events associated with postoperative major adverse events?"
+    }
+  ]
+}

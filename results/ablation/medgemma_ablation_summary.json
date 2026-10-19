@@ -1,0 +1,115 @@
+{
+  "model": "medgemma",
+  "split": "val",
+  "timestamp": "2026-09-26 22:47:43",
+  "retrieval_ablation": {
+    "bm25": {
+      "recall_at_1": 0.955,
+      "recall_at_3": 0.98,
+      "recall_at_5": 0.98,
+      "mrr": 0.9675,
+      "n_queries": 200,
+      "n_found": 196,
+      "n_not_found": 4
+    },
+    "dense": {
+      "recall_at_1": 0.98,
+      "recall_at_3": 0.995,
+      "recall_at_5": 1.0,
+      "mrr": 0.9885,
+      "n_queries": 200,
+      "n_found": 200,
+      "n_not_found": 0
+    },
+    "hybrid": {
+      "recall_at_1": 0.985,
+      "recall_at_3": 0.995,
+      "recall_at_5": 1.0,
+      "mrr": 0.991,
+      "n_queries": 200,
+      "n_found": 200,
+      "n_not_found": 0
+    }
+  },
+  "trust_model_ablation": {
+    "Heuristic (Equal Weights)": {
+      "ece": 0.1476,
+      "mce": 0.5245,
+      "brier_score": 0.2316,
+      "auroc": 0.4753,
+      "auprc": 0.263
+    },
+    "Uncalibrated LogReg": {
+      "ece": 0.0046,
+      "mce": 0.12,
+      "brier_score": 0.197,
+      "auroc": 0.5694,
+      "auprc": 0.3623
+    },
+    "Calibrated LogReg (Platt Scaling)": {
+      "ece": 0.0859,
+      "mce": 0.6773,
+      "brier_score": 0.2186,
+      "auroc": 0.472,
+      "auprc": 0.2699
+    },
+    "Calibrated LogReg (Isotonic)": {
+      "ece": 0.0047,
+      "mce": 0.1145,
+      "brier_score": 0.2025,
+      "auroc": 0.5193,
+      "auprc": 0.3855
+    },
+    "Gaussian Naive Bayes": {
+      "ece": 0.1129,
+      "mce": 0.2181,
+      "brier_score": 0.2224,
+      "auroc": 0.4733,
+      "auprc": 0.2629
+    }
+  },
+  "feature_ablation": {
+    "All 9 Features": {
+      "n_features": 9,
+      "ece": 0.0859,
+      "brier_score": 0.2186,
+      "auroc": 0.472,
+      "auprc": 0.2699
+    },
+    "w/o NLI Features": {
+      "n_features": 7,
+      "ece": 0.0797,
+      "brier_score": 0.2208,
+      "auroc": 0.4769,
+      "auprc": 0.2715
+    },
+    "w/o Retrieval Features": {
+      "n_features": 7,
+      "ece": 0.1013,
+      "brier_score": 0.2219,
+      "auroc": 0.4886,
+      "auprc": 0.2702
+    },
+    "w/o Lexical Features": {
+      "n_features": 8,
+      "ece": 0.1027,
+      "brier_score": 0.2236,
+      "auroc": 0.4839,
+      "auprc": 0.2758
+    },
+    "NLI Features Only": {
+      "n_features": 2,
+      "ece": 0.0333,
+      "brier_score": 0.2103,
+      "auroc": 0.4896,
+      "auprc": 0.2713
+    },
+    "Retrieval Features Only": {
+      "n_features": 2,
+      "ece": 0.0016,
+      "brier_score": 0.2015,
+      "auroc": 0.581,
+      "auprc": 0.3483
+    }
+  }
+}

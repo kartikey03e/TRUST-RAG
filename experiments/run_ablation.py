@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 # Add project root to path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -96,15 +97,19 @@ def run_trust_model_ablation(
     }
 
     # Variant B: Uncalibrated Logistic Regression
-    logger.info("Evaluating: Uncalibrated Logistic Regression")
+    # For fair evaluation on val: train on 75% train (450), calibrate on 25% train (150), evaluate on untouched val (200)
+    X_tr_sub, X_cal_sub, y_tr_sub, y_cal_sub = train_test_split(
+        X_train, y_train, test_size=0.25, random_state=seed, stratify=y_train
+    )
+
+    # Variant B: Uncalibrated Logistic Regression (Fit on 450-sample fitting partition)
+    logger.info("Evaluating: Uncalibrated Logistic Regression (Fit on 450-sample fitting partition)")
     uncal_model = TrustModel(
         model_type="logistic_regression",
         regularization_C=1.0,
-        calibration_method="platt",
         seed=seed,
     )
-    # Fit without val set to leave uncalibrated
-    uncal_model.fit(X_train, y_train)
+    uncal_model.fit(X_tr_sub, y_tr_sub)
     scores_uncal = uncal_model.predict_trust(X_val)
     cal_u = evaluator.compute_calibration(scores_uncal, y_val)
     disc_u = evaluator.compute_discrimination(scores_uncal, y_val)
@@ -118,12 +123,6 @@ def run_trust_model_ablation(
 
     # Variant C: Calibrated Platt (Sigmoid)
     logger.info("Evaluating: Calibrated LogReg (Platt)")
-    # For fair evaluation on val: train on 80% train, calibrate on 20% train, evaluate on val
-    n_tr = len(X_train)
-    split_idx = int(n_tr * 0.75)
-    X_tr_sub, y_tr_sub = X_train[:split_idx], y_train[:split_idx]
-    X_cal_sub, y_cal_sub = X_train[split_idx:], y_train[split_idx:]
-
     platt_model = TrustModel(
         model_type="logistic_regression",
         regularization_C=1.0,
@@ -195,34 +194,35 @@ def run_feature_ablation(
     evaluator = Evaluator(seed=seed)
     results = {}
 
+    nli_names = {"mean_max_entailment", "frac_entailed_claims", "max_contradiction", "frac_contradicted_claims"}
+    retrieval_names = {"retrieval_top1_score", "retrieval_score_margin", "n_unique_pmids"}
+    semantic_names = {"answer_evidence_sim", "question_answer_sim"}
+
     feature_groups = {
         "All 9 Features": list(range(len(FEATURE_NAMES))),
         "w/o NLI Features": [
-            i for i, name in enumerate(FEATURE_NAMES)
-            if name not in ("mean_max_entailment", "frac_entailed", "max_contradiction", "frac_contradicted")
+            i for i, name in enumerate(FEATURE_NAMES) if name not in nli_names
         ],
         "w/o Retrieval Features": [
-            i for i, name in enumerate(FEATURE_NAMES)
-            if name not in ("retrieval_top1_score", "retrieval_score_margin", "retrieval_entropy")
+            i for i, name in enumerate(FEATURE_NAMES) if name not in retrieval_names
         ],
-        "w/o Lexical Features": [
-            i for i, name in enumerate(FEATURE_NAMES)
-            if name not in ("lexical_overlap", "answer_evidence_sim")
+        "w/o Semantic Features": [
+            i for i, name in enumerate(FEATURE_NAMES) if name not in semantic_names
         ],
         "NLI Features Only": [
-            i for i, name in enumerate(FEATURE_NAMES)
-            if name in ("mean_max_entailment", "frac_entailed", "max_contradiction", "frac_contradicted")
+            i for i, name in enumerate(FEATURE_NAMES) if name in nli_names
         ],
         "Retrieval Features Only": [
-            i for i, name in enumerate(FEATURE_NAMES)
-            if name in ("retrieval_top1_score", "retrieval_score_margin", "retrieval_entropy")
+            i for i, name in enumerate(FEATURE_NAMES) if name in retrieval_names
+        ],
+        "Semantic Features Only": [
+            i for i, name in enumerate(FEATURE_NAMES) if name in semantic_names
         ],
     }
 
-    n_tr = len(X_train)
-    split_idx = int(n_tr * 0.75)
-    X_tr_sub, y_tr_sub = X_train[:split_idx], y_train[:split_idx]
-    X_cal_sub, y_cal_sub = X_train[split_idx:], y_train[split_idx:]
+    X_tr_sub, X_cal_sub, y_tr_sub, y_cal_sub = train_test_split(
+        X_train, y_train, test_size=0.25, random_state=seed, stratify=y_train
+    )
 
     for group_name, feat_indices in feature_groups.items():
         sub_X_tr = X_tr_sub[:, feat_indices]
@@ -328,8 +328,10 @@ def run_all_ablations(
             X_train = np.array(X_train_list, dtype=np.float32)
             y_train = np.array(y_train_list, dtype=np.int64)
         else:
-            logger.info("Train trust features not found — using 5-fold cross-split on val set")
-            X_train, y_train = X_val, y_val
+            raise FileNotFoundError(
+                f"Training trust features not found at {trust_train_path}. "
+                "Silent fallback to validation data is prohibited to prevent data leakage."
+            )
 
         if len(np.unique(y_val)) > 1:
             trust_ablation = run_trust_model_ablation(X_train, y_train, X_val, y_val, seed=seed)
@@ -340,7 +342,7 @@ def run_all_ablations(
         else:
             logger.warning("Only 1 class found in labels — skipping trust/feature ablations")
     else:
-        logger.info(f"Trust features not found at {trust_val_path} — skipping trust ablations")
+        raise FileNotFoundError(f"Validation trust features not found at {trust_val_path}")
 
     # Save summary
     save_json(summary, ablation_dir / f"{model_key}_ablation_summary.json")
@@ -351,7 +353,7 @@ def run_all_ablations(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="TRUST-RAG Ablation Experiments")
-    parser.add_argument("--model", type=str, default="medgemma", choices=["medgemma", "qwen"])
+    parser.add_argument("--model", type=str, default="qwen", choices=["medgemma", "qwen"])
     parser.add_argument("--split", type=str, default="val", choices=["val", "test"])
     parser.add_argument("--config", type=str, default=None)
     parser.add_argument("--skip-retrieval", action="store_true")

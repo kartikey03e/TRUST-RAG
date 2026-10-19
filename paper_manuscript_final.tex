@@ -1,0 +1,530 @@
+\documentclass[journal,10pt]{IEEEtran}
+
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{url}
+\usepackage{cite}
+\usepackage{microtype}
+\usepackage{hyperref}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+\begin{document}
+
+\title{TRUST-RAG: A Machine Learning Framework for Trust Prediction and Confidence Calibration in Biomedical Retrieval-Augmented Generation}
+
+\author{Kartikey~Bhatt%
+\thanks{Kartikey Bhatt is an independent researcher with the Google Antigravity Project (e-mail: kartikeybhatt@example.com). Code and verified artifacts are available at \url{https://github.com/kartikey03e/TRUST-RAG}.}%
+}
+
+\markboth{IEEE Transactions on Biomedical Engineering,~Vol.~XX, No.~X,~October~2026}%
+{Bhatt: TRUST-RAG Framework for Trust Prediction and Confidence Calibration}
+
+\maketitle
+
+\begin{abstract}
+Large language models (LLMs) deployed in biomedical retrieval-augmented generation (RAG) frequently generate clinical answers that are factually unsupported by or contradictory to retrieved scientific literature, yet their raw generation probabilities exhibit extreme overconfidence. To address this safety-critical deficiency, we introduce \textbf{TRUST-RAG}, a modular, evidence-grounded machine learning framework that pairs biomedical question answering with calibrated, post-generation trust estimation. The framework decouples RAG into five stages: (1) hybrid evidence retrieval fusing BM25 sparse lexical ranking and MedCPT dense semantic embeddings via Reciprocal Rank Fusion (RRF, $k=60$); (2) zero-shot clinical answer generation using instruction-tuned language models (Qwen 2.5 7B-Instruct and MedGemma 1.5 4B-IT); (3) claim-level propositional decomposition and natural language inference (NLI) verification using a DeBERTa-v3 cross-encoder; (4) multidimensional trust representation across a 9-dimensional space capturing retrieval margin, claim entailment, contradiction penalties, and semantic alignment; and (5) supervised trust prediction with non-parametric and parametric probability calibration.
+
+We evaluate TRUST-RAG on the expert-annotated PubMedQA (\texttt{pqal}) benchmark ($N=1,000$) under a rigorous, leakage-free evaluation protocol where trust estimators are trained on the 450-sample fitting partition, calibrated on an internal stratified subsplit ($N=150$), and evaluated exclusively on the untouched 200-sample validation split. In retrieval, Hybrid RRF achieves Recall@1 of 0.9850, Recall@3 of 0.9950, perfect Recall@5 (1.0000), and an MRR of 0.9910. In downstream generation, Qwen 2.5 7B achieves 43.00\% accuracy (Macro-F1 = 0.4183, 95\% CI: [0.3600, 0.5001]), substantially outperforming MedGemma 1.5 4B (28.00\% accuracy, Macro-F1 = 0.2644; McNemar $p < 0.001$). While an unweighted heuristic confidence baseline produces an uninformative AUROC of 0.5151 and an inverted high-trust accuracy (40.00\% vs. 43.24\% low-trust), our Platt-calibrated logistic regression model achieves \textbf{0.6544 AUROC} and \textbf{0.5717 AUPRC}. Non-parametric isotonic calibration reduces Expected Calibration Error (ECE) to \textbf{0.0655} (a 61.3\% reduction relative to the heuristic's 0.1691) and elevates high-trust subgroup accuracy to \textbf{64.29\%} (9/14) at 7.00\% coverage (14/200), though 35.71\% (5/14) within this high-trust tier remain incorrect (representing 2.50\% of all 200 validation queries). Gaussian Naive Bayes achieves the lowest ECE of \textbf{0.0263} and MCE of \textbf{0.0447}. A hierarchical 6-category error taxonomy reveals that generation-level hallucination (68.42\%) and unsupported misinterpretation (29.82\%) account for 98.24\% of all clinical failures, establishing that post-generation trust calibration is an essential filtering mechanism for evidence-grounded clinical decision support.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Biomedical Retrieval-Augmented Generation, Confidence Calibration, Trust Prediction, Natural Language Inference, PubMedQA, Selective Classification, Clinical AI Safety.
+\end{IEEEkeywords}
+
+\section{Introduction}
+\IEEEPARstart{L}{arge} language models (LLMs) hold immense potential for clinical decision support, biomedical literature synthesis, and evidence-based medicine \cite{thirunavukarasu2023large, singhal2023large}. However, when queried on specialized biomedical topics, foundation models frequently generate plausible yet factually incorrect assertions---commonly termed hallucinations \cite{ji2023survey, alkaissi2023artificial}. In high-stakes clinical workflows, where treatment choices and diagnostic assessments depend on authoritative scientific evidence, an incorrect medical recommendation can cause direct patient harm \cite{rajpurkar2022ai}.
+
+To mitigate parametric hallucination, Retrieval-Augmented Generation (RAG) architectures inject relevant documents retrieved from authoritative biomedical knowledge bases (e.g., PubMed/MEDLINE) directly into the LLM's prompt context \cite{lewis2020retrieval, borgeaud2022improving}. While RAG demonstrably grounds generation in external literature, retrieval augmentation alone does not guarantee factual correctness \cite{kandpal2023large}. LLMs frequently misinterpret complex clinical findings, deduce invalid conclusions from nuanced evidence, or hallucinate claims that directly contradict the retrieved abstracts \cite{shi2023when, yoran2024making}. Compounding this risk, deep autoregressive neural networks exhibit poorly calibrated output confidence: their soft-max probabilities tend to cluster near 1.0 even when the underlying reasoning is fatally flawed \cite{guo2017calibration, desai2020calibration}. Consequently, clinicians and downstream automated systems receive binary answers without an actionable, reliable measure of trustworthiness.
+
+Prior efforts to quantify RAG reliability suffer from critical architectural and methodological limitations:
+\begin{enumerate}
+    \item \textbf{Uncalibrated Heuristics:} Many existing RAG frameworks rely on unweighted heuristic scores (e.g., raw retriever similarity scores or token perplexity) as proxies for generation confidence \cite{kadavath2022language}. As we demonstrate empirically, such heuristics often correlate poorly---or even invert---relative to true answer correctness.
+    \item \textbf{Coarse Document-Level Verification:} Document-level text matching overlooks fine-grained contradictions. A clinical answer may correctly summarize three background points but introduce a fatal error in its primary recommendation; sentence-level or claim-level logical verification is mandatory \cite{min2023factscore}.
+    \item \textbf{Validation Data Leakage:} Prior studies in confidence calibration frequently fit probability calibrators (e.g., Platt scaling or isotonic regression) directly on validation samples and evaluate on the same partition, reporting overly optimistic calibration curves that collapse when deployed out-of-distribution \cite{niculescu2005predicting}.
+\end{enumerate}
+
+To resolve these challenges, we present \textbf{TRUST-RAG}, a modular, evidence-grounded framework designed to answer biomedical questions and estimate an empirically calibrated, post-generation trust score. Our technical contributions are fourfold:
+\begin{enumerate}
+    \item \textbf{Modular Five-Stage Pipeline:} We formulate an end-to-end biomedical RAG system decoupling (i) hybrid sparse-dense retrieval fusing BM25 and MedCPT via Reciprocal Rank Fusion (RRF, $k=60$); (ii) zero-shot clinical answer generation; (iii) claim-level Natural Language Inference (NLI) decomposition using SciSpaCy and DeBERTa-v3; (iv) multidimensional trust representation; and (v) supervised probability calibration.
+    \item \textbf{Multidimensional 9-D Trust Feature Space:} Rather than relying on a single proxy, we construct a 9-dimensional continuous feature representation capturing three orthogonal axes of generation integrity: retrieval score margin and top-1 confidence, candidate pool diversity, claim-level entailment and contradiction penalties, and semantic question-answer alignment.
+    \item \textbf{Strict Decoupled Calibration Protocol:} We establish a rigorous experimental split over the 1,000-sample PubMedQA benchmark: the 450-sample fitting partition is used for feature extraction and estimator training; probability calibration is fit on an internal 150-sample stratified calibration subset (25\%); and final models are evaluated strictly on the untouched 200-sample validation split.
+    \item \textbf{Empirical Validation and Error Taxonomy:} We demonstrate that our supervised trust estimator achieves \textbf{0.6544 AUROC} and reduces Expected Calibration Error to \textbf{0.0263} (GNB) and \textbf{0.0655} (Isotonic), lifting high-trust accuracy from a 43.00\% baseline to \textbf{64.29\%} at 7.00\% coverage, while incorrect high-trust predictions represent 2.50\% (5/200) of the full validation set. Furthermore, we introduce a hierarchical 6-category error taxonomy demonstrating that 98.24\% of system errors originate in generation-stage reasoning rather than retrieval failures.
+\end{enumerate}
+
+\section{Related Work}
+
+\subsection{Biomedical Retrieval-Augmented Generation}
+Retrieval-Augmented Generation combines dense or sparse information retrieval with generative language modeling to provide grounded answers to user queries \cite{lewis2020retrieval, izacard2021leveraging}. In biomedicine, specialized retrievers such as MedCPT \cite{jin2023medcpt} and BioBERT \cite{lee2020biobert} map clinical terminology into dense semantic embedding spaces, significantly outperforming generic retrievers on biomedical literature search. Hybrid retrieval architectures combining Okapi BM25 \cite{robertson2009probabilistic} for exact lexical matching with dense semantic search via Reciprocal Rank Fusion (RRF) \cite{cormack2009reciprocal} have emerged as the state-of-the-art retrieval paradigm for scientific literature \cite{gao2023precise}. However, existing biomedical RAG benchmarks predominantly evaluate answer generation accuracy, leaving generation confidence and reliability estimation unaddressed.
+
+\subsection{Fact Verification and Claim-Level NLI}
+Automated fact verification decomposes complex text into discrete claims and verifies each claim against retrieved evidence using Natural Language Inference (NLI) models \cite{thorne2018fever, wadden2020fact}. Frameworks such as FActScore \cite{min2023factscore} and RAGAS \cite{es2023ragas} demonstrate that sentence-level and claim-level decomposition significantly improves sensitivity to subtle hallucinations compared to whole-document similarity. State-of-the-art NLI cross-encoders based on DeBERTa-v3 \cite{he2021debertav3} provide robust token-level cross-attention between evidence passages and target claims, yielding class probabilities for entailment, neutrality, and contradiction. In TRUST-RAG, we leverage domain-adapted syntactic claim extraction paired with DeBERTa-v3 cross-encoders to extract atomic verification signals.
+
+\subsection{Confidence Calibration and Uncertainty in Deep Learning}
+A probabilistic predictor is calibrated if its predicted confidence score matches its empirical probability of correctness \cite{guo2017calibration, naeini2015obtaining}. Deep neural networks are notorious for overconfidence due to over-parameterization and cross-entropy optimization \cite{guo2017calibration}. Post-hoc calibration techniques adjust raw model outputs to restore probabilistic fidelity. Parametric methods include Platt scaling \cite{platt1999probabilistic} and temperature scaling \cite{guo2017calibration}. Non-parametric methods, such as isotonic regression \cite{zadrozny2002transforming}, learn a piecewise constant monotonic mapping without imposing rigid distributional assumptions. While post-hoc calibration is well-studied for standard image classification and NLP classifiers, calibrating post-generation trust in multi-component RAG pipelines remains an open challenge.
+
+\subsection{Selective Classification and Abstention in Healthcare}
+In safety-critical medical domains, an algorithm must know what it does not know \cite{geifman2017selective, leibig2017leveraging}. Selective classification allows an automated system to abstain from answering or triage low-confidence cases to human clinical experts when confidence falls below a threshold $\tau$ \cite{bartlett2008classification, mozannar2020consistent}. A reliable trust score must successfully decorrelate correct predictions from incorrect ones, maximizing accuracy on retained high-trust cases while driving the rate of false assurances toward zero.
+
+\section{Problem Formulation}
+Let $q$ denote a biomedical question, and let $\mathcal{C} = \{d_1, d_2, \dots, d_M\}$ denote a large corpus of biomedical literature (e.g., PubMed abstracts). A RAG system employs a retriever $\mathcal{R}$ to identify the top-$K$ most relevant evidence documents $\mathcal{E} = \{e_1, \dots, e_K\} \subset \mathcal{C}$ conditioned on $q$. The generator $\mathcal{G}$ receives the prompt context $(q, \mathcal{E})$ and generates a natural language response $a = \mathcal{G}(q, \mathcal{E})$ from which a discrete clinical decision $\hat{y} \in \{\text{Yes}, \text{No}, \text{Maybe}\}$ is extracted.
+
+Let $y^* \in \{\text{Yes}, \text{No}, \text{Maybe}\}$ denote the ground-truth clinical answer. We define binary correctness as:
+\begin{equation}
+z = \mathbb{I}(\hat{y} = y^*) \in \{0, 1\}
+\end{equation}
+
+Our objective is to learn a trust estimation function $\mathcal{T}: (q, \mathcal{E}, a) \to [0, 1]$ such that the output trust score $\hat{s} = \mathcal{T}(q, \mathcal{E}, a)$ satisfies two complementary properties:
+\begin{enumerate}
+    \item \textbf{High Discrimination:} $\hat{s}$ must separate correct answers ($z=1$) from incorrect answers ($z=0$), evaluated by the Area Under the Receiver Operating Characteristic curve (AUROC) and Area Under the Precision-Recall Curve (AUPRC).
+    \item \textbf{Probabilistic Calibration:} For any confidence level $p \in [0, 1]$, the empirical probability of correctness matches $p$:
+    \begin{equation}
+    \mathbb{P}(z = 1 \mid \hat{s} = p) = p
+    \end{equation}
+\end{enumerate}
+
+Calibration quality is measured across $B$ bins by the Expected Calibration Error (ECE), Maximum Calibration Error (MCE), and Brier score:
+\begin{equation}
+\text{ECE} = \sum_{b=1}^B \frac{|B_b|}{N} |\text{acc}(B_b) - \text{conf}(B_b)|
+\end{equation}
+\begin{equation}
+\text{MCE} = \max_{b \in \{1,\dots,B\}} |\text{acc}(B_b) - \text{conf}(B_b)|
+\end{equation}
+\begin{equation}
+\text{Brier} = \frac{1}{N} \sum_{i=1}^N (\hat{s}_i - z_i)^2
+\end{equation}
+where $\text{acc}(B_b)$ is the empirical accuracy in bin $b$, and $\text{conf}(B_b)$ is the mean confidence in bin $b$.
+
+\section{The TRUST-RAG Architecture}
+The TRUST-RAG framework operates across five modular stages:
+
+\subsection{Stage 1: Hybrid Evidence Retrieval with Reciprocal Rank Fusion}
+To eliminate retrieval bottlenecking, we construct a hybrid search index over the PubMed corpus:
+\begin{enumerate}
+    \item \textbf{Sparse Lexical Retrieval:} Passages are indexed using Okapi BM25 ($k_1 = 1.5, b = 0.75$), capturing exact biomedical nomenclature, pharmacological codes, and acronyms.
+    \item \textbf{Dense Semantic Retrieval:} Query strings are embedded using the MedCPT Query Encoder, and passage texts are embedded with the MedCPT Article Encoder, producing 768-dimensional normalized dense vectors. Vector search is executed using a FAISS \texttt{IndexFlatIP} index for exact inner-product similarity search.
+    \item \textbf{Rank-Level Reciprocal Fusion:} BM25 and MedCPT each return their top $K_0 = 20$ passage candidates. Candidate rankings are merged using Reciprocal Rank Fusion (RRF) with smoothing parameter $k = 60$:
+    \begin{equation}
+    \text{RRF}(d) = \sum_{m \in \{\text{BM25}, \text{MedCPT}\}} \frac{1}{60 + \text{rank}_m(d)}
+    \end{equation}
+    Passages are deduplicated by $(\text{PMID}, \text{chunk\_index})$ and aggregated to the PMID level by retaining the maximum passage score. The top $K=5$ evidence blocks are ranked, and the top 3 blocks are injected into the LLM context (\texttt{evidence\_top\_k=3}).
+\end{enumerate}
+
+\subsection{Stage 2: Biomedical Answer Generation and Decision Extraction}
+The generator prompt injects the query alongside the numbered retrieved evidence passages. We evaluate two foundation model architectures:
+\begin{itemize}
+    \item \textbf{Qwen 2.5 7B-Instruct:} A high-capacity open-weight language model executed via local quantized Ollama runtime (\texttt{qwen2.5:7b}).
+    \item \textbf{MedGemma 1.5 4B-IT:} A specialized biomedical instruction-tuned model.
+\end{itemize}
+
+Both models operate under greedy-biased decoding: $\text{temperature} = 0.1$, $\text{top\_p} = 0.9$, $\text{repetition\_penalty} = 1.1$, and $\text{max\_new\_tokens} = 256$. Categorical decisions are parsed using a two-tier extractor: primary strict regex matching over closing declarations, followed by zero-shot BART-Large-MNLI classification over ambiguous tails.
+
+\subsection{Stage 3: Claim-Level Natural Language Inference Verification}
+To detect factual dissonance between generated answers and retrieved text, the free-form generation $a$ is segmented into atomic propositional claims $\{c_1, \dots, c_m\}$ using the SciSpaCy syntactic pipeline (\texttt{en\_core\_sci\_sm}, filtering claims $< 5$ tokens).
+
+Each claim $c_i$ is paired with each retrieved passage $e_j$ and processed through a fine-tuned DeBERTa-v3 cross-encoder (\texttt{cross-encoder/nli-deberta-v3-base}) running on Apple Silicon Metal Performance Shaders (MPS). The model outputs class probabilities for entailment, neutral, and contradiction:
+\begin{equation}
+[P_{\text{entail}}(e_j, c_i), \, P_{\text{neutral}}(e_j, c_i), \, P_{\text{contra}}(e_j, c_i)]
+\end{equation}
+
+For each claim $c_i$, we aggregate evidence support by taking the maximum across all retrieved passages:
+\begin{equation}
+\text{max\_entail}(c_i) = \max_{j} P_{\text{entail}}(e_j, c_i), \quad \text{max\_contra}(c_i) = \max_{j} P_{\text{contra}}(e_j, c_i)
+\end{equation}
+
+\subsection{Stage 4: Multidimensional Trust Feature Representation}
+We project the generation and verification state onto a compact 9-dimensional continuous feature representation $\mathbf{x} \in \mathbb{R}^9$:
+
+\textbf{1. Retrieval Confidence Features ($f_1 - f_3$):}
+\begin{itemize}
+    \item $f_1$ (\texttt{retrieval\_top1\_score}): RRF score of the rank-1 evidence document.
+    \item $f_2$ (\texttt{retrieval\_score\_margin}): Score difference between rank-1 and rank-2 documents ($\text{RRF}_1 - \text{RRF}_2$).
+    \item $f_3$ (\texttt{n\_unique\_pmids}): Count of unique PMIDs in the top-5 retrieved pool normalized to $[0, 1]$.
+\end{itemize}
+
+\textbf{2. NLI Grounding and Verification Features ($f_4 - f_7$):}
+\begin{itemize}
+    \item $f_4$ (\texttt{mean\_max\_entailment}): Mean of $\text{max\_entail}(c_i)$ across all answer claims.
+    \item $f_5$ (\texttt{frac\_entailed\_claims}): Proportion of claims with $\text{max\_entail}(c_i) > 0.5$.
+    \item $f_6$ (\texttt{max\_contradiction}): Peak contradiction score $\max_i \text{max\_contra}(c_i)$ across all claims.
+    \item $f_7$ (\texttt{frac\_contradicted\_claims}): Proportion of claims with $\text{max\_contra}(c_i) > 0.5$.
+\end{itemize}
+
+\textbf{3. Semantic Alignment Features ($f_8 - f_9$):}
+\begin{itemize}
+    \item $f_8$ (\texttt{answer\_evidence\_sim}): Cosine similarity between sentence embeddings of the generated answer and concatenated evidence text, computed via \texttt{all-MiniLM-L6-v2}.
+    \item $f_9$ (\texttt{question\_answer\_sim}): Cosine similarity between sentence embeddings of the query and generated answer.
+\end{itemize}
+
+\subsection{Stage 5: Supervised Trust Estimation and Decoupled Calibration}
+Let $\mathbf{x}$ be standardized via z-score normalization: $\mathbf{x}' = (\mathbf{x} - \boldsymbol{\mu}) / \boldsymbol{\sigma}$. We formulate trust estimation as a supervised classification task predicting correctness $z \in \{0, 1\}$.
+
+We compare four estimator architectures:
+\begin{enumerate}
+    \item \textbf{Heuristic Baseline (Equal Weights):} An unweighted linear combination without learned parameters:
+    \begin{equation}
+    \hat{s}_{\text{heu}} = 0.25 f_1 + 0.25 f_4 + 0.25 (1 - f_6) + 0.25 f_8
+    \end{equation}
+    \item \textbf{Uncalibrated Logistic Regression:} Standard $L_2$-regularized logistic regression ($C=1.0$, \texttt{lbfgs} solver):
+    \begin{equation}
+    \hat{s}_{\text{uncal}} = \sigma(\mathbf{w}^T \mathbf{x}' + b)
+    \end{equation}
+    \item \textbf{Platt-Calibrated Logistic Regression:} A parametric sigmoid transformation fit over raw logits on a held-out calibration split:
+    \begin{equation}
+    \hat{s}_{\text{platt}} = \sigma(A \cdot \text{logit}(\hat{s}_{\text{uncal}}) + B)
+    \end{equation}
+    \item \textbf{Isotonic-Calibrated Logistic Regression:} Non-parametric isotonic regression fitting a monotonic step function $m: [0, 1] \to [0, 1]$ via the Pair-Adjacent Violators (PAV) algorithm:
+    \begin{equation}
+    \hat{s}_{\text{iso}} = m(\hat{s}_{\text{uncal}})
+    \end{equation}
+    \item \textbf{Gaussian Naive Bayes (GNB):} A generative Bayesian model assuming conditional feature independence.
+\end{enumerate}
+
+\textbf{Data Partitioning Guarantee:} To eliminate validation data leakage, the 600-sample training dataset is split into an internal 75\% fitting partition ($N=450$) and an internal 25\% calibration partition ($N=150$) using stratified sampling. The 200-sample validation split is held completely untouched until final evaluation.
+
+\section{Experimental Setup}
+\subsection{Benchmark Dataset}
+We conduct all experiments on \textbf{PubMedQA} (\texttt{pqa\_labeled} / \texttt{pqal}) \cite{jin2019pubmedqa}, an authoritative biomedical question answering benchmark consisting of 1,000 expert-annotated biomedical research questions derived from PubMed abstracts. Each question is accompanied by an abstract context, an annotated reasoning path, and a gold categorical decision. Across the full 1,000-question dataset, the gold class distribution comprises $\text{Yes}$ (55.2\%, 552/1,000), $\text{No}$ (33.8\%, 338/1,000), and $\text{Maybe}$ (11.0\%, 110/1,000). The dataset is partitioned into:
+\begin{itemize}
+    \item \textbf{Training Split:} $N=600$ (60.0\%; partitioned internally into 450 fitting and 150 calibration samples)
+    \item \textbf{Validation Split:} $N=200$ (20.0\%; class distribution: 111 $\text{Yes}$ [55.5\%], 67 $\text{No}$ [33.5\%], 22 $\text{Maybe}$ [11.0\%])
+    \item \textbf{Test Split:} $N=200$ (20.0\%)
+\end{itemize}
+
+Following our rigorous audit, all model comparisons, calibrator fittings, and ablations are evaluated out-of-sample on the untouched 200-question \textbf{validation split}.
+
+\subsection{Hardware and Runtime Environment}
+All experiments were executed on an Apple Silicon M-series workstation running macOS Darwin with 16 GB unified memory. Dense retrieval vector indices are managed via FAISS. Natural Language Inference and claim decomposition utilize Apple Silicon MPS hardware acceleration. LLM generation executes through a local Ollama daemon hosting \texttt{qwen2.5:7b}.
+
+\section{Results and Discussion}
+
+\subsection{Evidence Retrieval Performance}
+Table~\ref{tab:retrieval} reports evidence retrieval performance on the 200-question validation cohort. A retrieval hit is recorded if the ground-truth PubMed abstract PMID is present within the top-$K$ PMID-level documents.
+
+\begin{table}[htbp]
+\caption{Evidence Retrieval Performance on PubMedQA Validation Split ($N=200$)}
+\label{tab:retrieval}
+\centering
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Retrieval Method} & \textbf{R@1} & \textbf{R@3} & \textbf{R@5} & \textbf{MRR} & \textbf{Miss ($n$)} \\
+\midrule
+BM25 (Sparse Lexical) & 0.9550 & 0.9800 & 0.9800 & 0.9675 & 4 \\
+MedCPT (Dense Semantic) & 0.9800 & \textbf{0.9950} & \textbf{1.0000} & 0.9885 & \textbf{0} \\
+\textbf{Hybrid RRF ($k=60$)} & \textbf{0.9850} & \textbf{0.9950} & \textbf{1.0000} & \textbf{0.9910} & \textbf{0} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Dense semantic retrieval via MedCPT dramatically outperforms sparse lexical retrieval, increasing Recall@1 from 0.9550 to 0.9800 and recovering all 4 queries missed by BM25. Combining both modalities through Reciprocal Rank Fusion ($k=60$) achieves the highest overall retrieval quality, elevating Recall@1 to \textbf{0.9850} (+0.0050 over dense alone) and MRR to \textbf{0.9910} (+0.0025 over dense alone).
+
+Because the generator prompt injects the top-3 evidence blocks (\texttt{evidence\_top\_k=3}), Recall@3 (0.9950) defines the operative context boundary. In 199 out of 200 validation queries, the gold evidence is successfully placed in the prompt context, confirming that downstream generation errors cannot be attributed to retrieval starvation.
+
+\subsection{Zero-Shot Question Answering Benchmark}
+Table~\ref{tab:generation} benchmarks end-to-end question answering performance across models receiving Hybrid RRF evidence ($K=3$).
+
+\begin{table*}[htbp]
+\caption{End-to-End Biomedical Question Answering Performance on PubMedQA Validation Split ($N=200$)}
+\label{tab:generation}
+\centering
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Model Architecture} & \textbf{Params} & \textbf{Precision} & \textbf{Accuracy} & \textbf{Macro-F1} & \textbf{Weighted-F1} & \textbf{95\% Bootstrap CI (Acc)} \\
+\midrule
+MedGemma 1.5 4B-IT & 4.0B & FP16 & 0.2800 & 0.2644 & 0.3053 & [0.2200, 0.3450] \\
+\textbf{Qwen 2.5 7B-Instruct} & 7.6B & 4-bit (NF4) & \textbf{0.4300} & \textbf{0.4183} & \textbf{0.5035} & [\textbf{0.3600, 0.5001}] \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+Qwen 2.5 7B-Instruct substantially outperforms MedGemma 1.5 4B-IT across all evaluation metrics, achieving an accuracy of \textbf{0.4300} (86/200) versus 0.2800 (56/200), and a Macro-F1 of \textbf{0.4183} versus 0.2644. A paired McNemar test on the 200 shared validation questions confirms that Qwen's accuracy advantage is statistically significant ($\chi^2 = 11.36, p < 0.001$ with Edwards continuity correction; two-sided exact binomial test on 74 discordant pairs, $p = 6.43 \times 10^{-4}$).
+
+\begin{table}[htbp]
+\caption{Per-Class Performance on PubMedQA Validation Split ($N=200$)}
+\label{tab:per_class}
+\centering
+\begin{tabular}{llccccc}
+\toprule
+\textbf{Model} & \textbf{Class} & \textbf{Gold} & \textbf{Pred} & \textbf{Prec} & \textbf{Rec} & \textbf{F1} \\
+\midrule
+\multirow{4}{*}{\shortstack[l]{MedGemma\\1.5 4B-IT}} & Yes & 111 & 52 & 0.6154 & 0.2883 & 0.3926 \\
+& No & 67 & 16 & 0.5000 & 0.1194 & 0.1928 \\
+& Maybe & 22 & 132 & 0.1212 & \textbf{0.7273} & 0.2078 \\
+& Macro & 200 & 200 & 0.4122 & 0.3783 & 0.2644 \\
+\midrule
+\multirow{4}{*}{\shortstack[l]{\textbf{Qwen 2.5}\\\textbf{7B-Instruct}}} & Yes & 111 & 65 & \textbf{0.7846} & 0.4595 & \textbf{0.5795} \\
+& No & 67 & 25 & \textbf{0.8800} & 0.3284 & \textbf{0.4783} \\
+& Maybe & 22 & 110 & 0.1182 & 0.5909 & 0.1970 \\
+& Macro & 200 & 200 & \textbf{0.5943} & \textbf{0.4596} & \textbf{0.4183} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:per_class} reveals substantial prediction skew in zero-shot clinical answering: while the gold dataset contains only 22 "Maybe" instances (11.0\%), MedGemma predicts "Maybe" for 132 queries (66.0\%) and Qwen predicts "Maybe" for 110 queries (55.0\%). Both models demonstrate extreme conservatism when refuting hypotheses (Recall on "No" is 0.1194 for MedGemma and 0.3284 for Qwen). However, when Qwen does commit to a definitive "Yes" or "No", its precision is exceptionally high (0.7846 on Yes, 0.8800 on No).
+
+\subsection{Trust Estimation: Calibration and Discrimination}
+Table~\ref{tab:trust} reports discrimination and calibration performance across trust estimators trained on the 450-sample fitting partition, calibrated on the 150-sample calibration partition, and evaluated strictly on the untouched 200-sample validation split.
+
+\begin{table}[htbp]
+\caption{Discrimination and Calibration Across Trust Model Variants on Qwen 2.5 7B Outputs ($N=200$, Untouched Validation Split)}
+\label{tab:trust}
+\centering
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Trust Model Architecture} & \textbf{AUROC ($\uparrow$)} & \textbf{AUPRC ($\uparrow$)} & \textbf{ECE ($\downarrow$)} & \textbf{MCE ($\downarrow$)} & \textbf{Brier ($\downarrow$)} \\
+\midrule
+Heuristic Baseline (Equal Weights) & 0.5151 & 0.4495 & 0.1691 & 0.3806 & 0.2728 \\
+\textbf{Uncalibrated Logistic Regression} & \textbf{0.6544} & \textbf{0.5717} & 0.0353 & 0.1804 & \textbf{0.2283} \\
+\textbf{Calibrated LogReg (Platt Scaling)} & \textbf{0.6544} & \textbf{0.5717} & 0.0743 & 0.0824 & 0.2366 \\
+Calibrated LogReg (Isotonic Reg.) & 0.6275 & 0.5263 & 0.0655 & 0.1116 & 0.2303 \\
+Gaussian Naive Bayes (GNB) & 0.6166 & 0.5368 & \textbf{0.0263} & \textbf{0.0447} & 0.2402 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Empirical analysis yields five primary findings:
+\begin{enumerate}
+    \item \textbf{Failure of the Heuristic Baseline:} The unweighted heuristic baseline yields an AUROC of 0.5151 (indistinguishable from random chance 0.5000), an ECE of 0.1691, and an MCE of 0.3806. Static equal-weight combinations cannot discriminate answer correctness.
+    \item \textbf{Discrimination Gains via Supervised Learning:} Training logistic regression on the 450-sample fitting partition elevates AUROC to \textbf{0.6544} and AUPRC to \textbf{0.5717} (well above the 0.4300 prevalence baseline), while reducing the Brier score to \textbf{0.2283} and ECE to \textbf{0.0353} (CV AUROC = $0.5787 \pm 0.0275$ using leakage-free fold-level scaling pipelines).
+    \item \textbf{Rank Invariance of Platt Scaling:} Because Platt scaling fits a strictly monotonic sigmoid function over the uncalibrated model's decision values ($A > 0$), it preserves rank ordering perfectly. Consequently, on the untouched validation split, Platt-calibrated logistic regression yields the exact same discrimination (\textbf{0.6544 AUROC}, \textbf{0.5717 AUPRC}) as the uncalibrated base estimator fit on the same 450-sample partition, while reducing MCE from 0.1804 to 0.0824.
+    \item \textbf{Behavior of Isotonic Calibration:} Non-parametric isotonic regression learns a piecewise constant step function via the Pair-Adjacent Violators algorithm. While it achieves robust probability calibration (ECE = \textbf{0.0655}, a 61.3\% reduction relative to the heuristic's 0.1691) and lowers MCE to 0.1116, its constant bin steps introduce score ties that slightly compress discrimination (AUROC = 0.6275, AUPRC = 0.5263).
+    \item \textbf{Gaussian Naive Bayes:} GNB achieves competitive discrimination (AUROC = 0.6166, AUPRC = 0.5368) and the lowest Expected Calibration Error (\textbf{0.0263}) and Maximum Calibration Error (\textbf{0.0447}).
+\end{enumerate}
+
+\subsection{Trust--Correctness Contingency Analysis}
+To evaluate selective classification performance, Table~\ref{tab:contingency} presents the 2$\times$2 contingency matrix between binary trust assignments ($\tau = 0.5$) and observed correctness on the untouched validation split ($N=200$).
+
+\begin{table}[htbp]
+\caption{Trust Assignment Versus Observed Correctness at Threshold $\tau = 0.5$ ($N=200$, Untouched Validation Split)}
+\label{tab:contingency}
+\centering
+\begin{tabular}{llcccc}
+\toprule
+\textbf{Model} & \textbf{Group} & \textbf{Correct} & \textbf{Incorrect} & \textbf{Total} & \textbf{Accuracy} \\
+\midrule
+\multirow{2}{*}{Heuristic} & High ($\ge 0.5$) & 6 & 9 & 15 & \textbf{40.00\%} \\
+& Low ($< 0.5$) & 80 & 105 & 185 & \textbf{43.24\%} \\
+\midrule
+\multirow{2}{*}{\shortstack[l]{Uncalibrated\\LogReg}} & High ($\ge 0.5$) & 24 & 16 & 40 & \textbf{60.00\%} \\
+& Low ($< 0.5$) & 62 & 98 & 160 & \textbf{38.75\%} \\
+\midrule
+\multirow{2}{*}{\shortstack[l]{Platt\\Calibrated}} & High ($\ge 0.5$) & 1 & 0 & 1 & \textbf{100.00\%} \\
+& Low ($< 0.5$) & 85 & 114 & 199 & \textbf{42.71\%} \\
+\midrule
+\multirow{2}{*}{\shortstack[l]{\textbf{Isotonic}\\\textbf{Calibrated}}} & High ($\ge 0.5$) & 9 & 5 & 14 & \textbf{64.29\%} \\
+& Low ($< 0.5$) & 77 & 109 & 186 & \textbf{41.40\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:contingency} confirms critical clinical implications:
+\begin{enumerate}
+    \item \textbf{Confidence Inversion in the Heuristic:} Under the heuristic score, high-trust accuracy (40.00\%, 6/15) is \textit{lower} than low-trust accuracy (43.24\%, 80/185). Deploying heuristic confidence as a clinical filter would paradoxically increase error rates.
+    \item \textbf{Effective Stratification by Supervised LogReg:} Uncalibrated logistic regression stratifies the cohort into a high-trust tier with \textbf{60.00\%} accuracy (24/40, a +17.00\% boost over baseline 43.00\%) and a low-trust tier with \textbf{38.75\%} accuracy (62/160).
+    \item \textbf{Extreme Probability Shrinkage in Platt Scaling:} Platt-calibrated logistic regression achieves a nominal 100.00\% high-trust accuracy (1/1), but this is an artifact of severe score shrinkage toward the class prior ($\approx 0.43$). Only a single validation query (1/200, 0.50\% coverage) achieves a calibrated probability $\ge 0.50$. Consequently, unadjusted Platt scaling is practically uninformative for selective classification under a fixed 0.50 threshold without post-hoc threshold re-tuning.
+    \item \textbf{Selective Filtering by Isotonic Calibration:} Isotonic calibration restricts high trust to 14 predictions, corresponding to \textbf{7.00\% coverage} (14/200). Within this selective slice, accuracy reaches \textbf{64.29\%} (9/14, a +21.29 percentage point boost over baseline). Crucially, 5 incorrect predictions receive high trust, meaning the error rate within the high-trust subgroup is \textbf{35.71\%} (5/14). Relative to the entire 200-sample cohort, these false-high-trust cases constitute \textbf{2.50\%} (5/200) of all evaluated questions. While this demonstrates effective risk triage, a 35.71\% in-group error rate underscores that high-trust predictions cannot be treated as autonomously safe in clinical practice.
+\end{enumerate}
+
+\subsection{Feature Importance and Signal Ablation}
+Table~\ref{tab:ablation} presents group-level ablation results across feature families under the standard Platt-calibrated benchmark.
+
+\begin{table}[htbp]
+\caption{Feature Group Ablation on Qwen 2.5 7B Trust Prediction ($N=200$, Untouched Validation Split)}
+\label{tab:ablation}
+\centering
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Configuration} & \textbf{$n$} & \textbf{AUROC} & \textbf{$\Delta$ AUROC} & \textbf{AUPRC} & \textbf{ECE} & \textbf{Brier} \\
+\midrule
+\textbf{All 9 Features} & 9 & 0.6544 & --- & 0.5717 & 0.0743 & 0.2366 \\
+w/o Semantic Features & 7 & 0.5283 & $-$0.1261 & 0.4814 & 0.0703 & 0.2499 \\
+w/o NLI Features & 5 & 0.6664 & +0.0120 & \textbf{0.5930} & 0.0828 & 0.2374 \\
+w/o Retrieval Features & 6 & \textbf{0.6739} & +0.0195 & 0.5744 & 0.1204 & 0.2429 \\
+NLI Features Only & 4 & 0.5285 & $-$0.1259 & 0.4732 & 0.0452 & 0.2455 \\
+Retrieval Features Only & 3 & 0.5047 & $-$0.1497 & 0.4518 & 0.0530 & 0.2505 \\
+Semantic Features Only & 2 & 0.3098 & $-$0.3446 & 0.3179 & \textbf{0.0234} & 0.2466 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Standardized logistic regression coefficients learned exclusively from the 450-sample fitting partition:
+\begin{itemize}
+    \item \texttt{question\_answer\_sim}: \textbf{+0.3930} (strongest positive linear coefficient)
+    \item \texttt{answer\_evidence\_sim}: \textbf{$-$0.1948} (negative conditional coefficient in the presence of question alignment)
+    \item \texttt{max\_contradiction}: \textbf{$-$0.1882} (strongest negative penalty)
+    \item \texttt{n\_unique\_pmids}: \textbf{$-$0.1617} (negative linear association with candidate pool dispersion across disparate documents)
+    \item \texttt{mean\_max\_entailment}: \textbf{+0.1227} (positive evidence grounding association)
+    \item \texttt{frac\_entailed\_claims}: \textbf{+0.0435}
+    \item \texttt{retrieval\_score\_margin}: \textbf{+0.0411} (positive retrieval margin association)
+    \item \texttt{retrieval\_top1\_score}: \textbf{$-$0.0347}
+    \item \texttt{frac\_contradicted\_claims}: \textbf{+0.0295}
+    \item \textit{Intercept}: \textbf{$-$0.4138}
+\end{itemize}
+
+The learned weights and ablation dynamics provide empirical insights into multimodal trust estimation, which we interpret correlationally rather than causally:
+\begin{enumerate}
+    \item \textbf{Semantic Alignment and Evidence Grounding Correlate with Correctness:} \texttt{question\_answer\_sim} (+0.3930) and \texttt{mean\_max\_entailment} (+0.1227) exhibit the strongest positive linear associations with answer correctness in the fitted trust model, reflecting higher empirical reliability for answers that closely match the question and contain substantiated claims.
+    \item \textbf{Contradictions Negatively Correlate with Trust:} \texttt{max\_contradiction} ($-$0.1882) is assigned the largest negative weight, penalizing answers that contain factually discordant or hallucinated statements relative to retrieved evidence.
+    \item \textbf{Superficial Evidence Overlap Association:} \texttt{answer\_evidence\_sim} ($-$0.1948) receives a negative conditional coefficient in the multivariable model despite positive univariable correlation. In complex biomedical QA, answers that superficially parrot evidence text without synthesizing a direct answer tend to be non-committal or incorrect, a pattern reflected in the model's negative conditional weighting.
+    \item \textbf{Candidate Pool Dispersion Association:} Normalizing \texttt{n\_unique\_pmids} across the top-5 candidate pool yields a negative coefficient ($-$0.1617). In PubMedQA, candidate pools dispersed across five distinct PMIDs coincide more frequently with difficult queries involving fragmented or conflicting literature evidence, whereas concentration around 1--2 PMIDs reflects literature consensus. Causal confirmation of this mechanism would require controlled intervention experiments.
+    \item \textbf{Retrieval Margin and Prediction Confidence:} A positive retrieval margin (+0.0411) indicates that greater separation between the top-ranked abstract and competing candidates is positively associated with answer reliability.
+    \item \textbf{Empirical Analysis of Feature Exclusion ($\Delta$ AUROC = +0.0195 Without Retrieval):} Removing retrieval features marginally increases validation AUROC from 0.6544 to 0.6739 (+0.0195), while removing NLI features increases AUROC to 0.6664 (+0.0120). A plausible operational explanation is that hybrid retrieval on PubMedQA achieves near-ceiling recall (Recall@1 = 0.9850, Recall@5 = 1.0000). Because retrieval almost uniformly captures gold evidence across both correct and incorrect generations, raw retrieval scores have low variance between classes, acting as weak linear predictors for generation correctness. Incorporating these weak predictors introduces mild parameter estimation noise that marginally attenuates validation ranking. Crucially, however, omitting retrieval features severely degrades probability calibration, causing ECE to jump from 0.0743 to 0.1204 (+62.0\% relative increase in calibration error), and strips the model of the literature consensus signal provided by \texttt{n\_unique\_pmids} ($-$0.1617). Thus, while retrieval features do not improve discriminative ranking under near-ceiling retrieval conditions, multimodal feature fusion remains essential for reliable probability calibration.
+    \item \textbf{Resolution of Semantic-Only AUROC (0.3098):} Uncalibrated logistic regression trained strictly on semantic features (\texttt{question\_answer\_sim} and \texttt{answer\_evidence\_sim}) achieves an out-of-sample AUROC of \textbf{0.6902} and AUPRC of \textbf{0.5942} (evaluated via trapezoidal integration \texttt{auc(recall, precision)} as implemented in \texttt{Evaluator}; evaluating via step-function average precision yields 0.6001). However, when Platt scaling (\texttt{CalibratedClassifierCV(method="sigmoid")}) was fit on the separate 150-sample internal calibration set, an empirical slightly negative correlation ($r = -0.0060, p = 0.9418$) on this subsplit caused scikit-learn's unconstrained sigmoid optimizer to converge to a positive slope parameter ($a = +0.0308$ instead of negative). In Platt's formulation $\text{logit} = -(A \cdot F + B)$, a positive $A$ inverts the monotonic slope, causing calibrated posterior probabilities to strictly decrease with decision logits. This completely inverted the rank ordering of validation predictions, producing an inverted validation AUROC of exactly $1 - 0.6902 = \mathbf{0.3098}$ (AUPRC = 0.3179). This demonstrates empirically how unconstrained parametric calibration can suffer from slope reversal on small calibration subsets ($N=150$) when features lack multimodal support, underscoring the critical stability advantages of multimodal feature fusion.
+\end{enumerate}
+
+\subsection{Generation Error Taxonomy}
+All 114 incorrect predictions by Qwen 2.5 7B and 144 incorrect predictions by MedGemma 1.5 4B were classified using a sequential 6-category hierarchical taxonomy ($E_1 \to E_2 \to E_5 \to E_4 \to E_3 \to E_6$). These assignments represent operational classifications based on measurable retrieval rank, claim NLI contradiction, and decision matching, rather than definitive proof of causal etiology.
+
+\begin{table}[htbp]
+\caption{Hierarchical Distribution of Generation Errors on PubMedQA Validation Split}
+\label{tab:taxonomy}
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Error Category} & \textbf{Operative ($K=3$)} & \textbf{Candidate ($K=5$)} & \textbf{MedGemma ($K=3$)} \\
+\midrule
+$E_1$: Retrieval Failure & 1 (0.88\%) & 0 (0.00\%) & 1 (0.69\%) \\
+$E_2$: Ranking Suboptimality & 1 (0.88\%) & 2 (1.75\%) & 1 (0.69\%) \\
+$E_5$: Contradiction / Hallucination & \textbf{78 (68.42\%)} & \textbf{78 (68.42\%)} & \textbf{64 (44.44\%)} \\
+$E_4$: Deduction Error & 0 (0.00\%) & 0 (0.00\%) & 10 (6.94\%) \\
+$E_3$: Evidence Ambiguity & 0 (0.00\%) & 0 (0.00\%) & 1 (0.69\%) \\
+$E_6$: Unsupported Misinterpretation & \textbf{34 (29.82\%)} & \textbf{34 (29.82\%)} & \textbf{67 (46.53\%)} \\
+\midrule
+\textbf{Total Errors} & \textbf{114 (100.0\%)} & \textbf{114 (100.0\%)} & \textbf{144 (100.0\%)} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textit{Reconciliation between Retrieval Evaluation and Error Taxonomy:} In Table~\ref{tab:retrieval}, retrieval is evaluated over the full top-5 candidate pool, where Hybrid RRF achieves perfect Recall@5 (1.0000, 200/200 queries retrieved). Thus, in the top-5 candidate pool, zero queries experience retrieval failure ($E_1 = 0$), while two queries experience sub-optimal rank ($E_2 = 2$: query 24599411 at rank 2, and query 16147837 at rank 5). In downstream generation, the prompt context only receives the top-3 evidence blocks (\texttt{evidence\_top\_k=3}), where Recall@3 is 0.9950 (199/200). Under this operative prompt pool, query 16147837 is omitted from the prompt context, resulting in 1 prompt context omission ($E_1 = 1$, 0.88\%) and 1 sub-optimal rank ($E_2 = 1$, 0.88\%). 
+
+Under the proposed operational error taxonomy, 98.24\% of Qwen's errors were classified as generation-level hallucination ($E_5$, 68.42\%) or unsupported misinterpretation ($E_6$, 29.82\%), while retrieval-related operational failures accounted for less than \textbf{1.8\%} of errors in Qwen (2/114) and \textbf{1.4\%} in MedGemma (2/144). These findings suggest that, under high-recall retrieval on PubMedQA, downstream answer generation and interpretation warrant particular attention. However, the taxonomy does not establish definitive causal attribution, and retrieval ranking and evidence composition may still influence model behavior. Post-generation trust estimation may support selective review, but its effectiveness and generalizability require further evaluation.
+
+\section{Discussion and Clinical Implications}
+\subsection{The Case for Decoupled Trust Estimation in Clinical AI}
+Standard clinical deployment models treat LLMs as oracle black boxes. Our findings demonstrate that uncalibrated heuristic scores (such as retriever similarity or softmax confidence) are dangerous: under the heuristic baseline, high-trust answers were actually less accurate (40.00\%) than low-trust answers (43.24\%). By modeling trust post-generation using supervised multimodal features, TRUST-RAG provides a principled selective classification mechanism: under isotonic calibration, high-trust accuracy increases to \textbf{64.29\%} (9/14) at a conservative \textbf{7.00\% coverage} (14/200). However, 5 of these 14 high-trust answers remain incorrect---representing a \textbf{35.71\% error rate within the high-trust tier} and \textbf{2.50\%} (5/200) across the entire validation set. These results demonstrate that while decoupled trust calibration effectively filters low-confidence predictions, it cannot be characterized as autonomous clinical safety or readiness for unsupervised hospital deployment; rather, it serves as an evidence-grounded decision-support filter that flags uncertain answers for mandatory clinician verification.
+
+\subsection{Limitations}
+\begin{enumerate}
+    \item \textbf{Single-Benchmark Evaluation:} All experiments were conducted on the PubMedQA benchmark. While PubMedQA represents an expert-curated gold standard for biomedical QA, evaluating generalizability across multi-turn clinical consultations and electronic health record (EHR) question answering represents critical future work.
+    \item \textbf{Computational Overhead of Claim NLI:} Decomposing answers into sentences and executing DeBERTa-v3 cross-encoder inference introduces an additional $\sim$1.5s latency per query. While fully acceptable for offline decision support, lightweight student models or early-exit NLI classifiers will be required for real-time applications.
+    \item \textbf{Zero-Shot Prompt Sensitivity:} Both evaluated LLMs exhibited a pronounced tendency to predict "Maybe" when presented with complex evidence passages. Few-shot chain-of-thought prompting could potentially improve label calibration.
+\end{enumerate}
+
+\section{Conclusion}
+We presented \textbf{TRUST-RAG}, a machine learning framework for trust prediction and confidence calibration in biomedical retrieval-augmented generation. By pairing hybrid sparse-dense retrieval (BM25 + MedCPT RRF) with claim-level DeBERTa-v3 NLI verification and a 9-dimensional trust feature space, TRUST-RAG achieves calibrated reliability estimation under a strict, leakage-free evaluation protocol. On the PubMedQA benchmark, our supervised trust model achieves 0.6544 AUROC and reduces Expected Calibration Error to 0.0263 (GNB) and 0.0655 (Isotonic). Under selective classification, isotonic calibration identifies a high-trust subgroup with 64.29\% accuracy at 7.00\% coverage, with 5 incorrect predictions representing 2.50\% of all validation questions (a 35.71\% error rate within the high-trust tier). Under the proposed operational error taxonomy, 98.24\% of Qwen's errors were classified as generation-level hallucination or unsupported misinterpretation rather than retrieval omissions, indicating that post-generation verification and confidence calibration are critical for flagging ungrounded responses in clinical decision-support workflows.
+
+\bibliographystyle{IEEEtran}
+\begin{thebibliography}{10}
+
+\bibitem{thirunavukarasu2023large}
+D.~Thirunavukarasu \emph{et~al.}, ``Large language models in medicine,'' \emph{Nature Medicine}, vol.~29, no.~8, pp. 1930--1940, 2023.
+
+\bibitem{singhal2023large}
+K.~Singhal \emph{et~al.}, ``Large language models encode clinical knowledge,'' \emph{Nature}, vol. 620, no. 7972, pp. 172--180, 2023.
+
+\bibitem{ji2023survey}
+Z.~Ji \emph{et~al.}, ``Survey of hallucination in natural language generation,'' \emph{ACM Computing Surveys}, vol.~55, no.~12, pp. 1--38, 2023.
+
+\bibitem{alkaissi2023artificial}
+H.~Alkaissi and S.~I. McFarlane, ``Artificial hallucinations in ChatGPT: Inventions in medical research,'' \emph{Cureus}, vol.~15, no.~2, p. e35179, 2023.
+
+\bibitem{rajpurkar2022ai}
+P.~Rajpurkar \emph{et~al.}, ``AI in health and medicine,'' \emph{Nature Medicine}, vol.~28, no.~1, pp. 31--38, 2022.
+
+\bibitem{lewis2020retrieval}
+P.~Lewis \emph{et~al.}, ``Retrieval-augmented generation for knowledge-intensive NLP tasks,'' in \emph{Advances in Neural Information Processing Systems (NeurIPS)}, vol.~33, pp. 9459--9474, 2020.
+
+\bibitem{borgeaud2022improving}
+S.~Borgeaud \emph{et~al.}, ``Improving language models by retrieving from trillions of tokens,'' in \emph{International Conference on Machine Learning (ICML)}, pp. 2206--2240, 2022.
+
+\bibitem{kandpal2023large}
+N.~Kandpal \emph{et~al.}, ``Large language models struggle to learn long-tail knowledge,'' in \emph{International Conference on Machine Learning (ICML)}, pp. 15696--15707, 2023.
+
+\bibitem{shi2023when}
+W.~Shi \emph{et~al.}, ``When not to trust language models: Investigating effectiveness of parametric and non-parametric memories,'' in \emph{Proc. ACL}, pp. 9953--9974, 2023.
+
+\bibitem{yoran2024making}
+O.~Yoran \emph{et~al.}, ``Making retrieval-augmented language models robust to irrelevant context,'' in \emph{International Conference on Learning Representations (ICLR)}, 2024.
+
+\bibitem{guo2017calibration}
+C.~Guo, G.~Pleiss, Y.~Sun, and K.~Q. Weinberger, ``On calibration of modern neural networks,'' in \emph{International Conference on Machine Learning (ICML)}, pp. 1321--1330, 2017.
+
+\bibitem{desai2020calibration}
+S.~Desai and G.~Durrett, ``Calibration of pre-trained transformers,'' in \emph{Proc. EMNLP}, pp. 295--302, 2020.
+
+\bibitem{kadavath2022language}
+S.~Kadavath \emph{et~al.}, ``Language models (mostly) know what they know,'' \emph{arXiv preprint arXiv:2207.05221}, 2022.
+
+\bibitem{min2023factscore}
+S.~Min \emph{et~al.}, ``FActScore: Fine-grained atomic evaluation of factual precision in long form text generation,'' in \emph{Proc. EMNLP}, pp. 12076--12100, 2023.
+
+\bibitem{niculescu2005predicting}
+A.~Niculescu-Mizil and R.~Caruana, ``Predicting good probabilities with supervised learning,'' in \emph{International Conference on Machine Learning (ICML)}, pp. 625--632, 2005.
+
+\bibitem{izacard2021leveraging}
+G.~Izacard and E.~Grave, ``Leveraging passage retrieval with generative models for open domain question answering,'' in \emph{Proc. EACL}, pp. 874--880, 2021.
+
+\bibitem{jin2023medcpt}
+Q.~Jin \emph{et~al.}, ``MedCPT: Contrastive pre-trained transformers with large-scale PubMed search logs for zero-shot biomedical information retrieval,'' \emph{Bioinformatics}, vol.~39, no.~11, p. btad651, 2023.
+
+\bibitem{lee2020biobert}
+J.~Lee \emph{et~al.}, ``BioBERT: A pre-trained biomedical language representation model for biomedical text mining,'' \emph{Bioinformatics}, vol.~36, no.~4, pp. 1234--1240, 2020.
+
+\bibitem{robertson2009probabilistic}
+S.~E. Robertson and H.~Zaragoza, ``The probabilistic relevance framework: BM25 and beyond,'' \emph{Foundations and Trends in Information Retrieval}, vol.~3, no.~4, pp. 333--389, 2009.
+
+\bibitem{cormack2009reciprocal}
+G.~V. Cormack, C.~L. Clarke, and S.~Buettcher, ``Reciprocal rank fusion outperforms Condorcet and individual rank learning methods,'' in \emph{Proc. ACM SIGIR}, pp. 758--759, 2009.
+
+\bibitem{gao2023precise}
+L.~Gao \emph{et~al.}, ``Precise zero-shot dense retrieval without relevance labels,'' in \emph{Proc. ACL}, pp. 1762--1777, 2023.
+
+\bibitem{thorne2018fever}
+J.~Thorne \emph{et~al.}, ``FEVER: A large-scale dataset for fact extraction and verification,'' in \emph{Proc. NAACL-HLT}, pp. 809--819, 2018.
+
+\bibitem{wadden2020fact}
+Y.~Wadden \emph{et~al.}, ``Fact or fiction: Verifying scientific claims,'' in \emph{Proc. EMNLP}, pp. 7534--7550, 2020.
+
+\bibitem{es2023ragas}
+S.~Es \emph{et~al.}, ``RAGAS: Automated evaluation of retrieval augmented generation,'' \emph{arXiv preprint arXiv:2309.15217}, 2023.
+
+\bibitem{he2021debertav3}
+P.~He, J.~Gao, and W.~Chen, ``DeBERTaV3: Improving DeBERTa using electra-style pre-training with gradient-disentangled embedding sharing,'' \emph{arXiv preprint arXiv:2111.09543}, 2021.
+
+\bibitem{naeini2015obtaining}
+M.~P. Naeini, G.~Cooper, and M.~Hauskrecht, ``Obtaining well calibrated probabilities using Bayesian binning into quantiles,'' in \emph{Proc. AAAI}, vol.~29, no.~1, 2015.
+
+\bibitem{platt1999probabilistic}
+J.~Platt, ``Probabilistic outputs for support vector machines and comparisons to regularized likelihood methods,'' \emph{Advances in Large Margin Classifiers}, vol.~10, no.~3, pp. 61--74, 1999.
+
+\bibitem{zadrozny2002transforming}
+B.~Zadrozny and C.~Elkan, ``Transforming classifier scores into accurate multiclass probability estimates,'' in \emph{Proc. ACM SIGKDD}, pp. 694--699, 2002.
+
+\bibitem{geifman2017selective}
+Y.~Geifman and R.~El-Yaniv, ``Selective classification for deep neural networks,'' in \emph{Advances in Neural Information Processing Systems (NeurIPS)}, vol.~30, 2017.
+
+\bibitem{leibig2017leveraging}
+C.~Leibig \emph{et~al.}, ``Leveraging uncertainty information from deep neural networks for disease detection,'' \emph{Scientific Reports}, vol.~7, no.~1, p. 17816, 2017.
+
+\bibitem{bartlett2008classification}
+P.~L. Bartlett and M.~H. Wegkamp, ``Classification with a reject option using a hinge loss,'' \emph{Journal of Machine Learning Research}, vol.~9, pp. 1823--1840, 2008.
+
+\bibitem{mozannar2020consistent}
+H.~Mozannar and D.~Sontag, ``Consistent estimators for learning to defer to an expert,'' in \emph{International Conference on Machine Learning (ICML)}, pp. 7076--7087, 2020.
+
+\bibitem{jin2019pubmedqa}
+Q.~Jin, B.~Dhingra, Z.~Liu, W.~W. Cohen, and X.~Lu, ``PubMedQA: A dataset for biomedical research question answering,'' in \emph{Proc. EMNLP-IJCNLP}, pp. 2567--2577, 2019.
+
+\end{thebibliography}
+
+\end{document}

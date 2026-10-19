@@ -80,16 +80,22 @@ def set_seed(seed: int = 42) -> None:
             torch.cuda.manual_seed_all(seed)
             torch.backends.cudnn.deterministic = True
             torch.backends.cudnn.benchmark = False
+        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            torch.mps.manual_seed(seed)
     except ImportError:
         pass  # torch not available — fine for CPU-only stages
 
 
 def get_device() -> str:
-    """Return 'cuda' if available, else 'cpu'."""
+    """Return the best available accelerator: 'cuda' > 'mps' > 'cpu'."""
     try:
         import torch
 
-        return "cuda" if torch.cuda.is_available() else "cpu"
+        if torch.cuda.is_available():
+            return "cuda"
+        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            return "mps"
+        return "cpu"
     except ImportError:
         return "cpu"
 

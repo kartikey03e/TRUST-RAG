@@ -27,6 +27,7 @@ from sklearn.calibration import CalibratedClassifierCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold, cross_val_score
 from sklearn.naive_bayes import GaussianNB
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from src.config import get_default_config
@@ -129,13 +130,9 @@ class TrustModel:
             self._is_fitted = True
             return {"model_type": "heuristic", "cv_scores": None}
 
-        # Scale features
-        X_train_scaled = self._scaler.fit_transform(X_train)
-
         if self.model_type == "logistic_regression":
             base_model = LogisticRegression(
                 C=self.regularization_C,
-                penalty="l2",
                 solver="lbfgs",
                 max_iter=1000,
                 random_state=self.seed,
@@ -145,18 +142,26 @@ class TrustModel:
         else:
             raise ValueError(f"Unknown model type: {self.model_type}")
 
-        # Cross-validation on train set
+        # Cross-validation with Pipeline to ensure scaler is fit strictly on each fold's training subset
+        cv_pipeline = Pipeline([
+            ("scaler", StandardScaler()),
+            ("classifier", base_model),
+        ])
         cv = StratifiedKFold(
             n_splits=self.cv_folds, shuffle=True, random_state=self.seed
         )
         cv_scores = cross_val_score(
-            base_model, X_train_scaled, y_train, cv=cv, scoring="roc_auc"
+            cv_pipeline, X_train, y_train, cv=cv, scoring="roc_auc"
         )
         logger.info(
-            f"CV AUROC: {cv_scores.mean():.4f} ± {cv_scores.std():.4f}"
+            f"CV AUROC (leakage-free): {cv_scores.mean():.4f} ± {cv_scores.std():.4f}"
         )
 
-        # Fit on full train set
+        # Fit preprocessing scaler strictly on designated fitting partition X_train
+        self._scaler.fit(X_train)
+        X_train_scaled = self._scaler.transform(X_train)
+
+        # Fit base model on full fitting partition
         base_model.fit(X_train_scaled, y_train)
 
         # Calibrate on validation set if available
@@ -165,9 +170,19 @@ class TrustModel:
             method = (
                 "sigmoid" if self.calibration_method == "platt" else "isotonic"
             )
-            calibrated = CalibratedClassifierCV(
-                base_model, method=method, cv="prefit"
-            )
+            try:
+                from sklearn.frozen import FrozenEstimator
+
+                counts = np.bincount(y_val) if np.issubdtype(y_val.dtype, np.integer) else []
+                min_count = min(counts) if len(counts) > 1 else 0
+                cv_splits = max(2, min(5, min_count)) if min_count >= 2 else None
+                calibrated = CalibratedClassifierCV(
+                    FrozenEstimator(base_model), method=method, cv=cv_splits
+                )
+            except (ImportError, TypeError):
+                calibrated = CalibratedClassifierCV(
+                    base_model, method=method, cv="prefit"
+                )
             calibrated.fit(X_val_scaled, y_val)
             self._model = calibrated
             logger.info(f"Calibrated with {method} method on {len(y_val)} examples")

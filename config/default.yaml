@@ -58,6 +58,9 @@ generation:
       top_p: 0.9
       repetition_penalty: 1.1
       do_sample: true
+      # Local Mac backend (used when CUDA is unavailable)
+      local_backend: "mlx"
+      local_name: "mlx-community/medgemma-1.5-4b-it-4bit"
     qwen:
       name: "Qwen/Qwen2.5-7B-Instruct"
       dtype: "float16"
@@ -67,6 +70,9 @@ generation:
       top_p: 0.9
       repetition_penalty: 1.1
       do_sample: true
+      # Local Mac backend (used when CUDA is unavailable)
+      local_backend: "ollama"
+      local_name: "qwen2.5:7b"
   prompt_template: |
     You are a biomedical research expert. Based on the following evidence
     from published studies, answer the research question.
@@ -117,7 +123,7 @@ trust:
   model_type: "logistic_regression"    # logistic_regression | heuristic | bayesian
   regularization_C: 1.0               # L2 reg strength (tuned via CV)
   cv_folds: 5
-  calibration_method: "platt"          # platt | isotonic
+  calibration_method: "isotonic"       # platt | isotonic (isotonic recommended per paper results)
   trust_levels:
     high: 0.70
     moderate: 0.40

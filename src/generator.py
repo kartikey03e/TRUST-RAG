@@ -5,6 +5,13 @@ Unified generation interface for Qwen 2.5 7B and MedGemma 4B IT.
 Handles model loading (with quantization), prompt formatting, and
 batch inference with checkpoint/resume support.
 
+Supports three backends:
+  - "hf"     : HuggingFace transformers (original, for CUDA / Colab)
+  - "ollama" : Ollama HTTP API (for local Qwen via Ollama)
+  - "mlx"    : Apple MLX (for local MedGemma via mlx-vlm)
+
+Backend is auto-detected based on platform and config.
+
 Usage
 -----
     from src.generator import BiomedicalGenerator
@@ -74,6 +81,8 @@ class BiomedicalGenerator:
         quantization: str | None = None,
         dtype: str = "float16",
         device: str = "cuda",
+        backend: str = "hf",
+        local_name: str | None = None,
     ):
         self.model_name = model_name
         self.prompt_template = prompt_template
@@ -85,9 +94,14 @@ class BiomedicalGenerator:
         self.quantization = quantization
         self.dtype = dtype
         self.device = device
+        self.backend = backend
+        self.local_name = local_name
 
         self._model = None
         self._tokenizer = None
+        # MLX-specific
+        self._mlx_model = None
+        self._mlx_processor = None
 
     @classmethod
     def from_config(
@@ -104,6 +118,16 @@ class BiomedicalGenerator:
 
         from src.config import get_device
 
+        device = get_device()
+
+        # Determine backend: on CUDA use HuggingFace, otherwise use local backend
+        if device == "cuda":
+            backend = "hf"
+        else:
+            backend = model_cfg.get("local_backend", "hf")
+
+        local_name = model_cfg.get("local_name")
+
         return cls(
             model_name=model_cfg["name"],
             prompt_template=gen_cfg["prompt_template"],
@@ -114,13 +138,24 @@ class BiomedicalGenerator:
             do_sample=model_cfg["do_sample"],
             quantization=model_cfg.get("quantization"),
             dtype=model_cfg.get("dtype", "float16"),
-            device=get_device(),
+            device=device,
+            backend=backend,
+            local_name=local_name,
         )
 
     # ── Model loading ────────────────────────────────────────────────────
 
     def load_model(self) -> None:
-        """Load the model and tokenizer onto the device."""
+        """Load the model using the appropriate backend."""
+        if self.backend == "ollama":
+            self._load_model_ollama()
+        elif self.backend == "mlx":
+            self._load_model_mlx()
+        else:
+            self._load_model_hf()
+
+    def _load_model_hf(self) -> None:
+        """Load the model and tokenizer via HuggingFace transformers (original)."""
         if self._model is not None:
             logger.info("Model already loaded")
             return
@@ -187,14 +222,67 @@ class BiomedicalGenerator:
         print_gpu_memory("after model load")
         logger.info(f"Model loaded: {self.model_name}")
 
+    def _load_model_ollama(self) -> None:
+        """Verify Ollama is running and the model is available."""
+        import json
+        import urllib.request
+
+        ollama_model = self.local_name or self.model_name
+        logger.info(f"Connecting to Ollama for model: {ollama_model}")
+
+        try:
+            req = urllib.request.Request("http://localhost:11434/api/tags")
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read().decode())
+            available = [m["name"] for m in data.get("models", [])]
+            if ollama_model not in available:
+                logger.warning(
+                    f"Model '{ollama_model}' not found in Ollama. "
+                    f"Available: {available}. Attempting to pull..."
+                )
+                # Try to use it anyway — Ollama may pull on first request
+            else:
+                logger.info(f"Ollama model verified: {ollama_model}")
+        except Exception as e:
+            raise ConnectionError(
+                f"Cannot connect to Ollama at localhost:11434. "
+                f"Please start Ollama first: https://ollama.ai. Error: {e}"
+            ) from e
+
+        # Mark as loaded (Ollama manages its own model memory)
+        self._model = "ollama"
+
+    def _load_model_mlx(self) -> None:
+        """Load the model via Apple MLX (mlx-vlm)."""
+        if self._mlx_model is not None:
+            logger.info("MLX model already loaded")
+            return
+
+        import mlx_vlm
+
+        mlx_model_name = self.local_name or self.model_name
+        logger.info(f"Loading MLX model: {mlx_model_name}")
+
+        self._mlx_model, self._mlx_processor = mlx_vlm.load(mlx_model_name)
+
+        logger.info(f"MLX model loaded: {mlx_model_name}")
+
     def unload_model(self) -> None:
-        """Free model from GPU memory."""
-        if self._model is not None:
+        """Free model from memory."""
+        if self._model is not None and self._model != "ollama":
             del self._model
+            self._model = None
+        elif self._model == "ollama":
             self._model = None
         if self._tokenizer is not None:
             del self._tokenizer
             self._tokenizer = None
+        if self._mlx_model is not None:
+            del self._mlx_model
+            self._mlx_model = None
+        if self._mlx_processor is not None:
+            del self._mlx_processor
+            self._mlx_processor = None
         clear_gpu_memory()
         logger.info(f"Model unloaded: {self.model_name}")
 
@@ -240,6 +328,20 @@ class BiomedicalGenerator:
         -------
         GenerationResult
         """
+        if self.backend == "ollama":
+            return self._generate_ollama(question, evidence_blocks, question_pmid)
+        elif self.backend == "mlx":
+            return self._generate_mlx(question, evidence_blocks, question_pmid)
+        else:
+            return self._generate_hf(question, evidence_blocks, question_pmid)
+
+    def _generate_hf(
+        self,
+        question: str,
+        evidence_blocks: list[EvidenceBlock],
+        question_pmid: str = "",
+    ) -> GenerationResult:
+        """Generate using HuggingFace transformers (original CUDA path)."""
         import time
 
         import torch
@@ -283,6 +385,104 @@ class BiomedicalGenerator:
             retrieval_scores=[b.score for b in evidence_blocks],
             raw_output=raw_output.strip(),
             model_name=self.model_name,
+            generation_time=gen_time,
+        )
+
+    def _generate_ollama(
+        self,
+        question: str,
+        evidence_blocks: list[EvidenceBlock],
+        question_pmid: str = "",
+    ) -> GenerationResult:
+        """Generate using Ollama HTTP API (local Qwen)."""
+        import json
+        import time
+        import urllib.request
+
+        if self._model is None:
+            self.load_model()
+
+        prompt = self.format_prompt(question, evidence_blocks)
+        ollama_model = self.local_name or self.model_name
+
+        payload = json.dumps({
+            "model": ollama_model,
+            "prompt": prompt,
+            "stream": False,
+            "options": {
+                "num_predict": self.max_new_tokens,
+                "temperature": self.temperature,
+                "top_p": self.top_p,
+                "repeat_penalty": self.repetition_penalty,
+            },
+        }).encode("utf-8")
+
+        req = urllib.request.Request(
+            "http://localhost:11434/api/generate",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+        )
+
+        start_time = time.perf_counter()
+        with urllib.request.urlopen(req, timeout=300) as resp:
+            result = json.loads(resp.read().decode())
+        gen_time = time.perf_counter() - start_time
+
+        raw_output = result.get("response", "").strip()
+
+        return GenerationResult(
+            question=question,
+            question_pmid=question_pmid,
+            evidence_pmids=[b.pmid for b in evidence_blocks],
+            evidence_texts=[b.text for b in evidence_blocks],
+            retrieval_scores=[b.score for b in evidence_blocks],
+            raw_output=raw_output,
+            model_name=ollama_model,
+            generation_time=gen_time,
+        )
+
+    def _generate_mlx(
+        self,
+        question: str,
+        evidence_blocks: list[EvidenceBlock],
+        question_pmid: str = "",
+    ) -> GenerationResult:
+        """Generate using Apple MLX (local MedGemma)."""
+        import time
+
+        import mlx_vlm
+
+        if self._mlx_model is None:
+            self.load_model()
+
+        prompt = self.format_prompt(question, evidence_blocks)
+        mlx_model_name = self.local_name or self.model_name
+
+        start_time = time.perf_counter()
+        result = mlx_vlm.generate(
+            self._mlx_model,
+            self._mlx_processor,
+            prompt=prompt,
+            max_tokens=self.max_new_tokens,
+            temperature=self.temperature if self.temperature > 0 else 0.01,
+            verbose=False,
+        )
+        gen_time = time.perf_counter() - start_time
+
+        # mlx_vlm.generate returns a GenerationResult object with a .text attribute
+        if hasattr(result, "text"):
+            raw_output = result.text.strip()
+        else:
+            raw_output = str(result).strip()
+
+        return GenerationResult(
+            question=question,
+            question_pmid=question_pmid,
+            evidence_pmids=[b.pmid for b in evidence_blocks],
+            evidence_texts=[b.text for b in evidence_blocks],
+            retrieval_scores=[b.score for b in evidence_blocks],
+            raw_output=raw_output,
+            model_name=mlx_model_name,
             generation_time=gen_time,
         )
 

@@ -1,0 +1,122 @@
+{
+  "model": "qwen",
+  "split": "val",
+  "timestamp": "2026-10-12 23:24:34",
+  "retrieval_ablation": {
+    "bm25": {
+      "recall_at_1": 0.955,
+      "recall_at_3": 0.98,
+      "recall_at_5": 0.98,
+      "mrr": 0.9675,
+      "n_queries": 200,
+      "n_found": 196,
+      "n_not_found": 4
+    },
+    "dense": {
+      "recall_at_1": 0.98,
+      "recall_at_3": 0.995,
+      "recall_at_5": 1.0,
+      "mrr": 0.9885,
+      "n_queries": 200,
+      "n_found": 200,
+      "n_not_found": 0
+    },
+    "hybrid": {
+      "recall_at_1": 0.985,
+      "recall_at_3": 0.995,
+      "recall_at_5": 1.0,
+      "mrr": 0.991,
+      "n_queries": 200,
+      "n_found": 200,
+      "n_not_found": 0
+    }
+  },
+  "trust_model_ablation": {
+    "Heuristic (Equal Weights)": {
+      "ece": 0.1691,
+      "mce": 0.3806,
+      "brier_score": 0.2728,
+      "auroc": 0.5151,
+      "auprc": 0.4495
+    },
+    "Uncalibrated LogReg": {
+      "ece": 0.0353,
+      "mce": 0.1804,
+      "brier_score": 0.2283,
+      "auroc": 0.6544,
+      "auprc": 0.5717
+    },
+    "Calibrated LogReg (Platt Scaling)": {
+      "ece": 0.0743,
+      "mce": 0.0824,
+      "brier_score": 0.2366,
+      "auroc": 0.6544,
+      "auprc": 0.5717
+    },
+    "Calibrated LogReg (Isotonic)": {
+      "ece": 0.0655,
+      "mce": 0.1116,
+      "brier_score": 0.2303,
+      "auroc": 0.6275,
+      "auprc": 0.5263
+    },
+    "Gaussian Naive Bayes": {
+      "ece": 0.0263,
+      "mce": 0.0447,
+      "brier_score": 0.2402,
+      "auroc": 0.6166,
+      "auprc": 0.5368
+    }
+  },
+  "feature_ablation": {
+    "All 9 Features": {
+      "n_features": 9,
+      "ece": 0.0743,
+      "brier_score": 0.2366,
+      "auroc": 0.6544,
+      "auprc": 0.5717
+    },
+    "w/o NLI Features": {
+      "n_features": 5,
+      "ece": 0.0828,
+      "brier_score": 0.2374,
+      "auroc": 0.6664,
+      "auprc": 0.593
+    },
+    "w/o Retrieval Features": {
+      "n_features": 6,
+      "ece": 0.1204,
+      "brier_score": 0.2429,
+      "auroc": 0.6739,
+      "auprc": 0.5744
+    },
+    "w/o Semantic Features": {
+      "n_features": 7,
+      "ece": 0.0703,
+      "brier_score": 0.2499,
+      "auroc": 0.5283,
+      "auprc": 0.4814
+    },
+    "NLI Features Only": {
+      "n_features": 4,
+      "ece": 0.0452,
+      "brier_score": 0.2455,
+      "auroc": 0.5285,
+      "auprc": 0.4732
+    },
+    "Retrieval Features Only": {
+      "n_features": 3,
+      "ece": 0.053,
+      "brier_score": 0.2505,
+      "auroc": 0.5047,
+      "auprc": 0.4518
+    },
+    "Semantic Features Only": {
+      "n_features": 2,
+      "ece": 0.0234,
+      "brier_score": 0.2466,
+      "auroc": 0.3098,
+      "auprc": 0.3179
+    }
+  }
+}
